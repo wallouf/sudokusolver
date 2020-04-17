@@ -573,6 +573,97 @@ class Application(Frame):
 
                 return 1
 
+        # Search with exclu number tech
+        for value_to_check in range(1,10):
+            case_to_check = []
+            for case in range(0,9):
+                if value_to_check in self.possible_values_square[square][case]:
+                    case_to_check.append(case)
+
+            case_to_check = set(case_to_check)
+
+            if len(case_to_check) < 2:
+                continue
+
+            print("CE technique:")
+            print("\tValeur a check: ", value_to_check)
+            # Scan each line or col
+            for case in case_to_check:
+                line_found = False
+                col_found = False
+
+                absolute_case = sq_min + case + 1
+                absolute_line = int(((absolute_case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
+                absolute_col = (((absolute_case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
+                print("\tCase a check: ", absolute_case)
+                print("\tLine a check: ", absolute_line)
+                print("\tCol a check: ", absolute_col)
+
+                for line_index in range(len(self.possible_values_line[absolute_line])):
+                    # Check if already present in other case in other square
+                    # Calcul
+                    line_values_to_check = self.possible_values_line[absolute_line][line_index]
+                    # Get case from the line
+                    squareoffset = 0
+                    yoffset = 0
+                    case_from_the_line = 0
+
+                    if absolute_line > 6:
+                        squareoffset = 54
+                        yoffset = 6
+                    elif absolute_line > 3:
+                        squareoffset = 27
+                        yoffset = 3
+                    
+                    xoffset = (absolute_line - 1  - yoffset) * 3
+
+                    if line_index > 5:
+                        case_from_the_line = line_index - 5 + xoffset + squareoffset + 18
+                    elif line_index > 2:
+                        case_from_the_line = line_index - 2 + xoffset + squareoffset + 9
+                    else:
+                        case_from_the_line = line_index + 1 + xoffset + squareoffset
+
+                    square_from_line_to_check = int(case_from_the_line / 9)
+                    # Check if found
+                    if square_from_line_to_check != square and value_to_check in line_values_to_check:
+                        line_found = True
+                        break
+
+                for col_index in range(len(self.possible_values_col[absolute_col])):
+                    # Check if already present in other case in other square
+                    # Calcul
+                    col_values_to_check = self.possible_values_col[absolute_col][col_index]
+                    # Get case from the col
+                    case_from_the_col = 0
+                    squareoffset = 0
+                    yoffset = 0
+
+                    if absolute_col > 6:
+                        squareoffset = 6
+                        yoffset = 18
+                    elif absolute_col > 3:
+                        squareoffset = 3
+                        yoffset = 9
+
+                    if col_index > 5:
+                        case_from_the_col = ((col_index - 6) * 3) + (absolute_col - squareoffset) + yoffset + 54
+                    elif col_index > 2:
+                        case_from_the_col = ((col_index - 3) * 3) + (absolute_col - squareoffset) + yoffset + 27
+                    else:
+                        case_from_the_col = ((col_index) * 3) + (absolute_col - squareoffset) + yoffset
+                    
+                    square_from_line_to_check = int(case_from_the_col / 9)
+
+                    # Check if found
+                    if square_from_line_to_check != square and value_to_check in col_values_to_check:
+                        col_found = True
+                        break
+
+                if line_found and col_found:
+                    self.update_possible_values_catalog(possible_values, absolute_case, value_to_check)
+                    return 1
+
         return mvt
 
 
