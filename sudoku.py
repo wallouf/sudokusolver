@@ -155,15 +155,13 @@ class Application(Frame):
     def update_entry_value(self, event, text, posx, posy):
         # value
         widgetvalue = event.widget.get()
-        if not (widgetvalue.isdecimal() and 0 < int(widgetvalue) < 10):
+        
+        if (not (widgetvalue.isdecimal() and 0 < int(widgetvalue) < 10)) or not self.check_sudoku_rule(widgetvalue, posx, posy):
             text.set("")
-        else:
-            self.check_sudoku_rule(event.widget, text, posx, posy)
 
-    def check_sudoku_rule(self, entry, text, posx, posy):
+    def check_sudoku_rule(self, widgetvalue, posx, posy):
         # calcul square
         posx +=1
-        widgetvalue = entry.get()
         square=1
 
         offsetx = 0
@@ -200,8 +198,7 @@ class Application(Frame):
         
         # check for square
         if widgetvalue in square_dict:
-            text.set("")
-            return
+            return False
         
         # check for lines H
         h_lines_dict = {}
@@ -215,8 +212,7 @@ class Application(Frame):
                 h_lines_dict[actual_value] = ""
         
         if widgetvalue in h_lines_dict:
-            text.set("")
-            return
+            return False
         
         # check for lines V
         v_lines_dict = {}
@@ -230,8 +226,9 @@ class Application(Frame):
                 v_lines_dict[actual_value] = ""
         
         if widgetvalue in v_lines_dict:
-            text.set("")
-            return
+            return False
+
+        return True
 
     def get_all_possible_values(self):
         entrycount = 1
@@ -464,12 +461,16 @@ class Application(Frame):
         # Deduct solution
         full_count = 0
 
+        remaining_size = 0
+
         while True:
+            remaining_size = 0
             print("")
             print("")
             print("Values:")
             for square in range(0,9):
                 for values in range(len(self.possible_values_square[square])):
+                    remaining_size += len(self.possible_values_square[square][values])
                     print("\t ",self.possible_values_square[square][values])
                 print("")
             print("")
@@ -488,6 +489,57 @@ class Application(Frame):
         print("END OF DEDUCT")
         print("")
         print("Mouvement: ", full_count)
+        if remaining_size == 0:
+            print("")
+            print("\t SUCCESSFULLY SOLVED !")
+        else:
+            print("")
+            print("\t CAN'T BE SOLVED !")
+        
+        print("")
+        print("Recheck solution:")
+        if self.recheck_all_results():
+            print("Solution verified ! ")
+        else:
+            print("Error with the solution when re-checking ! ")
+
+    def recheck_all_results(self):
+        entrycount = 1
+        offsetx = 0
+        offsety = 0
+
+        # self.label = Label(self, text='Affichage')
+        # self.label.grid(column=0, row=10)
+
+        for iti1 in range(1,10):
+            
+            posx = offsetx
+            posy = offsety
+            
+            for iti2 in range(0,9):
+                # Each 3 slot, return x to 0 and offset
+                modulo=(posx % 3)
+                if modulo != 3 and modulo == 0:
+                    posx = offsetx
+                    posy += 1
+
+                if not self.check_sudoku_rule(self.entries.get("entry{0}".format(entrycount)).get(), posx, posy):
+                    return False
+
+                # Increment
+                entrycount += 1
+                posx += 1
+
+            # Increment position for next 9 blocs
+            if (iti1 % 3) == 0:
+                offsetx = 0
+                offsety += 3
+            else:
+                offsetx += 3
+
+        return True
+                
+
         
     def iterate_all_strategies(self):
         # S1 - Unique choice scan
