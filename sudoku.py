@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 from tkinter import *
+import time
+
+current_milli_time = lambda: int(round(time.time() * 1000))
                 
 class Application(Frame):
     def __init__(self, master=None):
@@ -16,13 +19,14 @@ class Application(Frame):
             self.entries_hori.append({})
             self.entries_vert.append({})
         
-        # self.f1 = Frame(master)
-        # self.f1.grid(row=0, column=0)
-
         self.generate_sudoku()
         
         self.pack()
+        begin = current_milli_time()
         self.create_widgets()
+        end = current_milli_time()
+
+        print("Duration : ", (end-begin))
 
     def generate_sudoku(self):
         self.entries_generated[2] = 5
@@ -56,6 +60,14 @@ class Application(Frame):
         self.entries_generated[78] = 3
         self.entries_generated[81] = 4
         return
+    
+    def update_entry_value(self, event, text, posx, posy):
+        # value
+        widgetvalue = event.widget.get()
+        if not (widgetvalue.isdecimal() and 0 < int(widgetvalue) < 10):
+            text.set("")
+        else:
+            self.check_sudoku_rule(event.widget, text, posx, posy)
 
     def check_sudoku_rule(self, entry, text, posx, posy):
         # calcul square
@@ -274,107 +286,152 @@ class Application(Frame):
             mvt = 0
             # Loop
             mvt = self.iterate_full_solution(possible_values, mvt)
+            
+            print("")
+            print("\tMouvement: ", mvt)
 
             if mvt == 0:
                 break
 
+    def update_possible_values_catalog(self, possible_values, case, value):
+        print("Case: ", case)
+        print("value to remove: ", value)
+
+        # Update square
+        square = int((case - 1) / 9)
+        sq_min = (square * 9)
+        sq_max = (square * 9) + 9
+        
+        for item in possible_values[sq_min:sq_max]:
+            if value in item:
+                item.remove(value)
+        
+        # Update line
+        line = int(((case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
+
+        squareoffset = 0
+        yoffset = 0
+
+        if line > 6:
+            squareoffset = 54
+            yoffset = 6
+        elif line > 3:
+            squareoffset = 27
+            yoffset = 3
+        
+        xoffset = (line - 1  - yoffset) * 3
+        
+        for lineindex in range(1,4):
+            xindex = lineindex + xoffset + squareoffset
+
+            if value in possible_values[(xindex -1)]:
+                possible_values[(xindex -1)].remove(value)
+
+        for lineindex in range(1,4):
+            xindex = lineindex + xoffset + squareoffset + 9
+
+            if value in possible_values[(xindex -1)]:
+                possible_values[(xindex -1)].remove(value)
+
+        for lineindex in range(1,4):
+            xindex = lineindex + xoffset + squareoffset + 18
+
+            if value in possible_values[(xindex -1)]:
+                possible_values[(xindex -1)].remove(value)
+
+        # Update colonne
+        col = (((case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
+
+        squareoffset = 0
+        yoffset = 0
+
+        if col > 6:
+            squareoffset = 6
+            yoffset = 18
+        elif col > 3:
+            squareoffset = 3
+            yoffset = 9
+        
+        for index in range(1,4):
+            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset
+
+            if value in possible_values[(xindex -1)]:
+                possible_values[(xindex -1)].remove(value)
+
+        for index in range(1,4):
+            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 27
+
+            if value in possible_values[(xindex -1)]:
+                possible_values[(xindex -1)].remove(value)
+
+        for index in range(1,4):
+            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 54
+
+            if value in possible_values[(xindex -1)]:
+                possible_values[(xindex -1)].remove(value)
+
+        return
         
     def iterate_full_solution(self, possible_values, mvt):
+        print("\t\tTEST")
+        print("\t\tCase 73: ", possible_values[72])
+        print("\t\tCase 79: ", possible_values[78])
         print("Begin square loop")
         for square in range(0,9):
-            print("")
-            mvt = self.iterate_square_solution(square, possible_values, mvt)
-            print("\tMouvement: ", mvt)
+            if self.iterate_square_solution(square, possible_values, mvt) > 0:
+                return 1
 
-        print("Begin case loop")
-        for case in range(1,82):
-            # Remove square
-            square = int((case - 1) / 9)
-            possquare = int(case % 9)
-            
-
-            # Calculate X & Y position
-            posy = int((possquare - 1) / 3) + 1
-            
-            if possquare == 0:
-                possquare = 9
-                posy = 3
-            
-            posx = (possquare % 3)
-            if posx == 0:
-                posx = 3
-
-            offsetsquarex = square
-            offsetsquarey = 0
-            if square > 5:
-                offsetsquarex -= 6
-                offsetsquarey = 6
-            elif square > 2:
-                offsetsquarex -= 3
-                offsetsquarey = 3
-            
-            posx += (offsetsquarex * 3)
-            posy += offsetsquarey
-
-            # print("\t",case)
-            # print("\t",posx)
-            # print("\t",posy)
-            # print("")
-            # mvt = self.iterate_hori_solution(case, posx, posy, possible_values, mvt)
-            
-        mvt = self.iterate_hori_solution(3, 3, 1, possible_values, mvt)
-
-
-
+        print("Begin line hori loop")
+        for line in range(1,10):
+            if self.iterate_line_solution(line, possible_values, mvt) > 0:
+                return 1
+        
+        print("Begin col vert loop")
+        for col in range(1,10):
+            if self.iterate_col_solution(col, possible_values, mvt) > 0:
+                return 1
 
         return mvt
 
-    def iterate_hori_solution(self, case, posx, posy, possible_values, mvt):
+    def iterate_line_solution(self, line, possible_values, mvt):
         #retrieve values for the line
+        print("")
         hori_values = []
-        hori_count = 0
         hori_key = []
 
         squareoffset = 0
         yoffset = 0
-        
-        if case > 54:
-            squareoffset = 54
-        elif case > 27:
-            squareoffset = 27
 
-        if posy > 6:
+        if line > 6:
+            squareoffset = 54
             yoffset = 6
-        elif posy > 3:
+        elif line > 3:
+            squareoffset = 27
             yoffset = 3
         
-        xoffset = (posy - 1  - yoffset) * 3
+        xoffset = (line - 1  - yoffset) * 3
         
         for index in range(1,4):
             xindex = index + xoffset + squareoffset
-            hori_key.append((xindex - 1))
-            if xindex == case:
-                hori_count = case
-            print(xindex)
+            hori_key.append(xindex)
+
             hori_values.append(possible_values[(xindex -1)])
 
         for index in range(1,4):
             xindex = index + xoffset + squareoffset + 9
-            hori_key.append((xindex - 1))
-            if xindex == case:
-                hori_count = case
-            print(xindex)
+            hori_key.append(xindex)
+
             hori_values.append(possible_values[(xindex -1)])
 
         for index in range(1,4):
             xindex = index + xoffset + squareoffset + 18
-            hori_key.append((xindex - 1))
-            if xindex == case:
-                hori_count = case
-            print(xindex)
+            hori_key.append(xindex)
+
             hori_values.append(possible_values[(xindex -1)])
 
         #Check for solutions in the 9 cases of the line
+        print("LINE: ", line)
+        print("\t",hori_values)
         for index in range(0,9):
             values = hori_values[index]
             case_readed = hori_key[index]
@@ -382,14 +439,12 @@ class Application(Frame):
             
             if len(values) == 1:
                 value = values[0]
-
-                for key in hori_key:
-                    if key in possible_values and value in possible_values[key]:
-                        possible_values[key].remove(value)
                 
-                self.entries["text{0}".format(hori_key[index])].set(value)
-                mvt += 1
-                return self.iterate_hori_solution(case, posx, posy, possible_values, mvt)
+                self.entries["text{0}".format(case_readed)].set(value)
+
+                self.update_possible_values_catalog(possible_values, case_readed, value)
+                
+                return 1
 
             for index2 in range(0,9):
                 if index == index2 or len(hori_values[index2]) == 0:
@@ -398,19 +453,100 @@ class Application(Frame):
                 hori_others_values = hori_others_values + hori_values[index2]
 
             hori_others_values = set(hori_others_values)
-
-            
             hori_unique_value = set(hori_values[index]) - hori_others_values
-            print("Unique line value:")
-            print(hori_unique_value)
+            
+            if len(hori_unique_value) > 0:
+                print("Unique line value:")
+                print(hori_unique_value)
+
+                value = hori_unique_value.pop()
+                
+                self.entries["text{0}".format(case_readed)].set(value)
+
+                self.update_possible_values_catalog(possible_values, case_readed, value)
+
+                return 1
 
 
         return mvt
 
+    def iterate_col_solution(self, col, possible_values, mvt):
+        #retrieve values for the line
+        vert_values = []
+        vert_key = []
+        
+        squareoffset = 0
+        yoffset = 0
+
+        if col > 6:
+            squareoffset = 6
+            yoffset = 18
+        elif col > 3:
+            squareoffset = 3
+            yoffset = 9
+
+        print("Colonne: ", col)
+        
+        for index in range(1,4):
+            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset
+            print("\tcase: ", xindex)
+            vert_key.append(xindex)
+
+            vert_values.append(possible_values[(xindex -1)])
+
+        for index in range(1,4):
+            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 27
+            print("\tcase: ", xindex)
+            vert_key.append(xindex)
+
+            vert_values.append(possible_values[(xindex -1)])
+
+        for index in range(1,4):
+            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 54
+            print("\tcase: ", xindex)
+            vert_key.append(xindex)
+
+            vert_values.append(possible_values[(xindex -1)])
+
+        #Check for solutions in the 9 cases of the col
+        print("COL: ", col)
+        print("\t",vert_values)
+        for index in range(0,9):
+            values = vert_values[index]
+            case_readed = vert_key[index]
+            vert_others_values = []
+            
+            if len(values) == 1:
+                value = values[0]
+                
+                self.entries["text{0}".format(case_readed)].set(value)
+
+                self.update_possible_values_catalog(possible_values, case_readed, value)
+
+                return 1
+
+            for index2 in range(0,9):
+                if index == index2 or len(vert_values[index2]) == 0:
+                    continue
+
+                vert_others_values = vert_others_values + vert_values[index2]
+
+            vert_others_values = set(vert_others_values)
+            vert_unique_value = set(vert_values[index]) - vert_others_values
+            
+            if len(vert_unique_value) > 0:
+                print("Unique col value:")
+                print(vert_unique_value)
+
+                value = vert_unique_value.pop()
+                
+                self.entries["text{0}".format(case_readed)].set(value)
+
+                self.update_possible_values_catalog(possible_values, case_readed, value)
+
+                return 1
 
 
-
-    def iterate_vert_solution(self, case, posx, posy, possible_values, mvt):
         return mvt
 
     def iterate_square_solution(self, square, possible_values, mvt):
@@ -418,11 +554,8 @@ class Application(Frame):
         sq_max = (square * 9) + 9
         square_values = possible_values[sq_min:sq_max]
 
-        print("Values:")
-        print(possible_values)
-        print(sq_min)
-        print(sq_max)
-        print(square_values)
+        print("SQUARE: ", square)
+        print("\t",square_values)
 
         for index1 in range(0,9):
             square_others_values = []
@@ -430,19 +563,12 @@ class Application(Frame):
             if len(square_values[index1]) == 1:
                 value = square_values[index1][0]
                 entrycount = sq_min + index1 + 1
-
-                for item in possible_values[sq_min:sq_max]:
-                    if value in item:
-                        item.remove(value)
                 
                 self.entries["text{0}".format(entrycount)].set(value)
-                mvt += 1
+
+                self.update_possible_values_catalog(possible_values, entrycount, value)
                 
-                print("Test")
-                print(possible_values[sq_min:sq_max])
-
-                return self.iterate_square_solution(square, possible_values, mvt)
-
+                return 1
 
             for index2 in range(0,9):
                 if index1 == index2 or len(square_values[index2]) == 0:
@@ -451,22 +577,23 @@ class Application(Frame):
                 square_others_values = square_others_values + square_values[index2]
 
             square_others_values = set(square_others_values)
-
-            
             square_unique_value = set(square_values[index1]) - square_others_values
-            print("Unique square value:")
-            print(square_unique_value)
+            
+            if len(square_unique_value) > 0:
+                print("Unique square value:")
+                print(square_unique_value)
+
+                value = square_unique_value.pop()
+                entrycount = sq_min + index1 + 1
+                
+                self.entries["text{0}".format(entrycount)].set(value)
+
+                self.update_possible_values_catalog(possible_values, entrycount, value)
+
+                return 1
 
         return mvt
 
-
-    def update_entry_value(self, event, text, posx, posy):
-        # value
-        widgetvalue = event.widget.get()
-        if not (widgetvalue.isdecimal() and 0 < int(widgetvalue) < 10):
-            text.set("")
-        else:
-            self.check_sudoku_rule(event.widget, text, posx, posy)
 
     def create_widgets(self, frame=None):
         self.entrycount = 1
@@ -500,7 +627,6 @@ class Application(Frame):
                     self.text.set(self.entries_generated[self.entrycount])
                     self.entry.config(state='disabled')
 
-                # self.entry.bind('<KeyRelease>', self.update_entry_value)
                 self.entry.bind('<KeyRelease>', lambda event, v=self.text, posx=self.posx, posy=self.posy: self.update_entry_value(event, v, posx, posy))
 
                 self.entries["entry{0}".format(self.entrycount)] = self.entry
