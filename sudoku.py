@@ -400,21 +400,28 @@ class Application(Frame):
 
         # Update square
         square = int((case - 1) / 9)
+        line = int(((case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
+        col = (((case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
+        
+        square_item = case - (square * 9)
+        line_item = col - 1
+        col_item = line - 1
+
+        # reset values to 0 for this case
+        self.possible_values_square[square][square_item] = []
+        self.possible_values_line[line][line_item] = []
+        self.possible_values_col[col][col_item] = []
         
         for item in self.possible_values_square[square]:
             if value in item:
                 item.remove(value)
         
         # Update line
-        line = int(((case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
-
         for index in range(0,9):
             if value in self.possible_values_line[line][index]:
                 self.possible_values_line[line][index].remove(value)
 
         # Update colonne
-        col = (((case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
-
         for index in range(0,9):
             if value in self.possible_values_col[col][index]:
                 self.possible_values_col[col][index].remove(value)
@@ -476,7 +483,6 @@ class Application(Frame):
                 value = hori_unique_value.pop()
                 
                 self.entries["text{0}".format(case_readed)].set(value)
-
                 self.update_possible_values_catalog(possible_values, case_readed, value)
 
                 return 1
@@ -522,7 +528,6 @@ class Application(Frame):
                 value = vert_unique_value.pop()
                 
                 self.entries["text{0}".format(case_readed)].set(value)
-
                 self.update_possible_values_catalog(possible_values, case_readed, value)
 
                 return 1
@@ -568,7 +573,6 @@ class Application(Frame):
                 entrycount = sq_min + index1 + 1
                 
                 self.entries["text{0}".format(entrycount)].set(value)
-
                 self.update_possible_values_catalog(possible_values, entrycount, value)
 
                 return 1
@@ -624,11 +628,18 @@ class Application(Frame):
                     else:
                         case_from_the_line = line_index + 1 + xoffset + squareoffset
 
+                    print("\t\t line check for case: ", case_from_the_line)
                     square_from_line_to_check = int(case_from_the_line / 9)
                     # Check if found
                     if square_from_line_to_check != square and value_to_check in line_values_to_check:
                         line_found = True
                         break
+                
+                # If found in another square
+                if not line_found:
+                    print("Values only possible in this square for this line with CE Technique")
+                    if self.clean_line_possible_values_for_ce_technique(square, absolute_line, value_to_check) > 0:
+                        return 1
 
                 for col_index in range(len(self.possible_values_col[absolute_col])):
                     # Check if already present in other case in other square
@@ -653,19 +664,80 @@ class Application(Frame):
                     else:
                         case_from_the_col = ((col_index) * 3) + (absolute_col - squareoffset) + yoffset
                     
+                    print("\t\t col check for case: ", case_from_the_col)
                     square_from_line_to_check = int(case_from_the_col / 9)
 
                     # Check if found
                     if square_from_line_to_check != square and value_to_check in col_values_to_check:
                         col_found = True
                         break
-
-                if line_found and col_found:
-                    self.update_possible_values_catalog(possible_values, absolute_case, value_to_check)
-                    return 1
+                
+                # If found in another square
+                if not col_found:
+                    print("Values only possible in this square for this col with CE Technique")
+                    if self.clean_col_possible_values_for_ce_technique(square, absolute_col, value_to_check) > 0:
+                        return 1
 
         return mvt
 
+    def clean_line_possible_values_for_ce_technique(self, square, absolute_line, value_to_check):
+        deleted = 0
+        # Clean the case of the square that are not in this line of this value
+        for ite in range(0,9):
+            case_to_clean = (square * 9) + ite
+            line_to_clean = int(((case_to_clean - (square*9)))/3) + 1 + (int(square/3) * 3)
+            col_to_clean = ((case_to_clean - (square * 9)) % 3) + 1 + ((square % 3) * 3)
+            posx_to_clean = col_to_clean - 1
+            posy_to_clean = line_to_clean - 1
+            print("")
+            print("\t\t",case_to_clean)
+            print("\t\t",line_to_clean)
+            print("\t\t",col_to_clean)
+            print("\t\t",posx_to_clean)
+            print("\t\t",posy_to_clean)
+            
+            if absolute_line != line_to_clean:
+                # clean
+                if value_to_check in self.possible_values_square[square][ite]:
+                    print("\t\t\t CLEAN")
+                    self.possible_values_square[square][ite].remove(value_to_check)
+                    deleted += 1
+                # clean
+                if value_to_check in self.possible_values_line[line_to_clean][posx_to_clean]:
+                    self.possible_values_line[line_to_clean][posx_to_clean].remove(value_to_check)
+                    deleted += 1
+                # clean
+                if value_to_check in self.possible_values_col[col_to_clean][posy_to_clean]:
+                    self.possible_values_col[col_to_clean][posy_to_clean].remove(value_to_check)
+                    deleted += 1
+
+        return deleted
+
+    def clean_col_possible_values_for_ce_technique(self, square, absolute_col, value_to_check):
+        deleted = 0
+        # Clean the case of the square that are not in this line of this value
+        for ite in range(0,9):
+            case_to_clean = (square * 9) + ite
+            line_to_clean = int(((case_to_clean - (square*9)))/3) + 1 + (int(square/3) * 3)
+            col_to_clean = ((case_to_clean - (square * 9)) % 3) + 1 + ((square % 3) * 3)
+            posx_to_clean = col_to_clean - 1
+            posy_to_clean = line_to_clean - 1
+            
+            if absolute_col != col_to_clean:
+                # clean
+                if value_to_check in self.possible_values_square[square][ite]:
+                    self.possible_values_square[square][ite].remove(value_to_check)
+                    deleted += 1
+                # clean
+                if value_to_check in self.possible_values_line[line_to_clean][posx_to_clean]:
+                    self.possible_values_line[line_to_clean][posx_to_clean].remove(value_to_check)
+                    deleted += 1
+                # clean
+                if value_to_check in self.possible_values_col[col_to_clean][posy_to_clean]:
+                    self.possible_values_col[col_to_clean][posy_to_clean].remove(value_to_check)
+                    deleted += 1
+
+        return deleted
 
     def create_widgets(self, frame=None):
         self.entrycount = 1
