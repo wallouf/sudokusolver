@@ -9,6 +9,13 @@ class Application(Frame):
         super().__init__(master)
         self.master = master
 
+        self.possible_values_square={}
+        self.possible_values_line={}
+        self.possible_values_col={}
+        
+        self.key_line={}
+        self.key_col={}
+
         self.entries_generated={}
 
         self.entries={}
@@ -279,7 +286,20 @@ class Application(Frame):
             else:
                 offsetx += 3
 
-        #Search for square solution
+        #Search for solution
+        for square in range(0,9):
+            self.get_square_solution(possible_values, square)
+
+
+        for line in range(1,10):
+            self.get_line_solution(possible_values, line)
+
+
+        for col in range(1,10):
+            self.get_col_solution(possible_values, col)
+
+
+        # Deduct solution
         mvt = 0
 
         while True:
@@ -293,109 +313,13 @@ class Application(Frame):
             if mvt == 0:
                 break
 
-    def update_possible_values_catalog(self, possible_values, case, value):
-        print("Case: ", case)
-        print("value to remove: ", value)
-
-        # Update square
-        square = int((case - 1) / 9)
+    def get_square_solution(self, possible_values, square):
         sq_min = (square * 9)
         sq_max = (square * 9) + 9
         
-        for item in possible_values[sq_min:sq_max]:
-            if value in item:
-                item.remove(value)
-        
-        # Update line
-        line = int(((case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
+        self.possible_values_square[square] = possible_values[sq_min:sq_max]
 
-        squareoffset = 0
-        yoffset = 0
-
-        if line > 6:
-            squareoffset = 54
-            yoffset = 6
-        elif line > 3:
-            squareoffset = 27
-            yoffset = 3
-        
-        xoffset = (line - 1  - yoffset) * 3
-        
-        for lineindex in range(1,4):
-            xindex = lineindex + xoffset + squareoffset
-
-            if value in possible_values[(xindex -1)]:
-                possible_values[(xindex -1)].remove(value)
-
-        for lineindex in range(1,4):
-            xindex = lineindex + xoffset + squareoffset + 9
-
-            if value in possible_values[(xindex -1)]:
-                possible_values[(xindex -1)].remove(value)
-
-        for lineindex in range(1,4):
-            xindex = lineindex + xoffset + squareoffset + 18
-
-            if value in possible_values[(xindex -1)]:
-                possible_values[(xindex -1)].remove(value)
-
-        # Update colonne
-        col = (((case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
-
-        squareoffset = 0
-        yoffset = 0
-
-        if col > 6:
-            squareoffset = 6
-            yoffset = 18
-        elif col > 3:
-            squareoffset = 3
-            yoffset = 9
-        
-        for index in range(1,4):
-            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset
-
-            if value in possible_values[(xindex -1)]:
-                possible_values[(xindex -1)].remove(value)
-
-        for index in range(1,4):
-            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 27
-
-            if value in possible_values[(xindex -1)]:
-                possible_values[(xindex -1)].remove(value)
-
-        for index in range(1,4):
-            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 54
-
-            if value in possible_values[(xindex -1)]:
-                possible_values[(xindex -1)].remove(value)
-
-        return
-        
-    def iterate_full_solution(self, possible_values, mvt):
-        print("\t\tTEST")
-        print("\t\tCase 73: ", possible_values[72])
-        print("\t\tCase 79: ", possible_values[78])
-        print("Begin square loop")
-        for square in range(0,9):
-            if self.iterate_square_solution(square, possible_values, mvt) > 0:
-                return 1
-
-        print("Begin line hori loop")
-        for line in range(1,10):
-            if self.iterate_line_solution(line, possible_values, mvt) > 0:
-                return 1
-        
-        print("Begin col vert loop")
-        for col in range(1,10):
-            if self.iterate_col_solution(col, possible_values, mvt) > 0:
-                return 1
-
-        return mvt
-
-    def iterate_line_solution(self, line, possible_values, mvt):
-        #retrieve values for the line
-        print("")
+    def get_line_solution(self, possible_values, line):
         hori_values = []
         hori_key = []
 
@@ -428,6 +352,96 @@ class Application(Frame):
             hori_key.append(xindex)
 
             hori_values.append(possible_values[(xindex -1)])
+
+        self.key_line[line] = hori_key
+        self.possible_values_line[line] = hori_values
+
+    def get_col_solution(self, possible_values, col):
+        vert_values = []
+        vert_key = []
+        
+        squareoffset = 0
+        yoffset = 0
+
+        if col > 6:
+            squareoffset = 6
+            yoffset = 18
+        elif col > 3:
+            squareoffset = 3
+            yoffset = 9
+
+        for index in range(1,4):
+            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset
+            print("\tcase: ", xindex)
+            vert_key.append(xindex)
+
+            vert_values.append(possible_values[(xindex -1)])
+
+        for index in range(1,4):
+            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 27
+            print("\tcase: ", xindex)
+            vert_key.append(xindex)
+
+            vert_values.append(possible_values[(xindex -1)])
+
+        for index in range(1,4):
+            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 54
+            print("\tcase: ", xindex)
+            vert_key.append(xindex)
+
+            vert_values.append(possible_values[(xindex -1)])
+
+        self.key_col[col] = vert_key
+        self.possible_values_col[col] = vert_values
+
+    def update_possible_values_catalog(self, possible_values, case, value):
+        print("Case: ", case)
+        print("value to remove: ", value)
+
+        # Update square
+        square = int((case - 1) / 9)
+        
+        for item in self.possible_values_square[square]:
+            if value in item:
+                item.remove(value)
+        
+        # Update line
+        line = int(((case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
+
+        for index in range(0,9):
+            if value in self.possible_values_line[line][index]:
+                self.possible_values_line[line][index].remove(value)
+
+        # Update colonne
+        col = (((case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
+
+        for index in range(0,9):
+            if value in self.possible_values_col[col][index]:
+                self.possible_values_col[col][index].remove(value)
+        
+    def iterate_full_solution(self, possible_values, mvt):
+        print("Begin square loop")
+        for square in range(0,9):
+            if self.iterate_square_solution(square, possible_values, mvt) > 0:
+                return 1
+
+        print("Begin line hori loop")
+        for line in range(1,10):
+            if self.iterate_line_solution(line, possible_values, mvt) > 0:
+                return 1
+        
+        print("Begin col vert loop")
+        for col in range(1,10):
+            if self.iterate_col_solution(col, possible_values, mvt) > 0:
+                return 1
+
+        return mvt
+
+    def iterate_line_solution(self, line, possible_values, mvt):
+        #retrieve values for the line
+        print("")
+        hori_values = self.possible_values_line[line]
+        hori_key = self.key_line[line]
 
         #Check for solutions in the 9 cases of the line
         print("LINE: ", line)
@@ -472,41 +486,8 @@ class Application(Frame):
 
     def iterate_col_solution(self, col, possible_values, mvt):
         #retrieve values for the line
-        vert_values = []
-        vert_key = []
-        
-        squareoffset = 0
-        yoffset = 0
-
-        if col > 6:
-            squareoffset = 6
-            yoffset = 18
-        elif col > 3:
-            squareoffset = 3
-            yoffset = 9
-
-        print("Colonne: ", col)
-        
-        for index in range(1,4):
-            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset
-            print("\tcase: ", xindex)
-            vert_key.append(xindex)
-
-            vert_values.append(possible_values[(xindex -1)])
-
-        for index in range(1,4):
-            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 27
-            print("\tcase: ", xindex)
-            vert_key.append(xindex)
-
-            vert_values.append(possible_values[(xindex -1)])
-
-        for index in range(1,4):
-            xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 54
-            print("\tcase: ", xindex)
-            vert_key.append(xindex)
-
-            vert_values.append(possible_values[(xindex -1)])
+        vert_values = self.possible_values_col[col]
+        vert_key = self.key_col[col]
 
         #Check for solutions in the 9 cases of the col
         print("COL: ", col)
@@ -550,9 +531,9 @@ class Application(Frame):
         return mvt
 
     def iterate_square_solution(self, square, possible_values, mvt):
+        square_values = self.possible_values_square[square]
         sq_min = (square * 9)
         sq_max = (square * 9) + 9
-        square_values = possible_values[sq_min:sq_max]
 
         print("SQUARE: ", square)
         print("\t",square_values)
