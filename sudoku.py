@@ -28,13 +28,65 @@ class Application(Frame):
             self.entries_vert.append({})
         
         self.generate_sudoku()
-        
         self.pack()
+        self.create_sudoku_grid()
+        
         begin = current_milli_time()
-        self.create_widgets()
+        self.get_all_possible_values()
+        self.loop_apply_strategies()
         end = current_milli_time()
 
         print("Duration : ", (end-begin))
+
+    def create_sudoku_grid(self, frame=None):
+        self.entrycount = 1
+        self.offsetx = 0
+        self.offsety = 0
+
+        # self.label = Label(self, text='Affichage')
+        # self.label.grid(column=0, row=10)
+
+        for self.iti1 in range(1,10):
+            
+            self.posx = self.offsetx
+            self.posy = self.offsety
+            
+            for self.iti2 in range(0,9):
+                # Each 3 slot, return x to 0 and offset
+                self.modulo=(self.posx % 3)
+                if self.modulo != 3 and self.modulo == 0:
+                    self.posx = self.offsetx
+                    self.posy += 1
+                
+                # create text variable 
+                self.text = StringVar()
+
+                # Create entries
+                self.entry = Entry(self, width=4, textvariable=self.text)
+                self.entry.grid(column=self.posx, row=self.posy)
+
+                # Pre-load sudoku
+                if self.entrycount in self.entries_generated:
+                    self.text.set(self.entries_generated[self.entrycount])
+                    self.entry.config(state='disabled')
+
+                self.entry.bind('<KeyRelease>', lambda event, v=self.text, posx=self.posx, posy=self.posy: self.update_entry_value(event, v, posx, posy))
+
+                self.entries["entry{0}".format(self.entrycount)] = self.entry
+                self.entries["text{0}".format(self.entrycount)] = self.text
+                self.entries_hori[(self.posy-1)]["entry{0}".format(self.posx)] = self.entry
+                self.entries_vert[self.posx]["entry{0}".format((self.posy-1))] = self.entry
+                
+                # Increment
+                self.entrycount += 1
+                self.posx += 1
+
+            # Increment position for next 9 blocs
+            if (self.iti1 % 3) == 0:
+                self.offsetx = 0
+                self.offsety += 3
+            else:
+                self.offsetx += 3
 
     def generate_sudoku(self):
         self.entries_generated[2] = 5
@@ -103,17 +155,6 @@ class Application(Frame):
         # Calculate position
         square_offset = ((square - 1) * 9)
         elem = square_offset + ((posy - offsety - 1) * 3) + (posx - offsetx)
-            
-        # print("Check rule...")
-        # print(posx)
-        # print(posy)
-        # print("")
-        # print("Element:")
-        # print(elem)
-        # print("")
-        # print("Square:")
-        # print(square)
-        # print("")
 
         square_dict = {}
         range_min = square_offset + 1
@@ -161,7 +202,7 @@ class Application(Frame):
             text.set("")
             return
 
-    def search_good_values(self):
+    def get_all_possible_values(self):
         entrycount = 1
         offsetx = 0
         offsety = 0
@@ -179,12 +220,6 @@ class Application(Frame):
             posy = offsety
             print("")
             print("")
-            # print("offsetX:")
-            # print(offsetx)
-            # print("offsetY:")
-            # print(offsety)
-            # print("")
-            # print("")
             
             for iti2 in range(0,9):
                 # Each 3 slot, return x to 0 and offset
@@ -200,17 +235,6 @@ class Application(Frame):
                         posy += 1
                     
                     continue
-                
-                # print("")
-                # print("")
-                # print("Nb:")
-                # print(entrycount)
-                # print("X:")
-                # print(posx)
-                # print("Y:")
-                # print(posy)
-                # print("Mod:")
-                # print(modulo)
                 
                 for tester in range(1,10):
                     # calcul square
@@ -266,11 +290,6 @@ class Application(Frame):
                         possible_values[(entrycount-1)].append(tester)
                 
                 print(possible_values[(entrycount-1)])
-                # if len(possible_values[(entrycount-1)]) == 1:
-                #     self.entries["text{0}".format(entrycount)].set(possible_values[(entrycount-1)][0])
-                #     possible_values[(entrycount-1)] = []
-                    # Reinit and retry to find solution
-
                 
                 # Increment
                 entrycount += 1
@@ -299,20 +318,6 @@ class Application(Frame):
         for col in range(1,10):
             self.get_col_solution(possible_values, col)
 
-
-        # Deduct solution
-        mvt = 0
-
-        while True:
-            mvt = 0
-            # Loop
-            mvt = self.iterate_full_solution(possible_values, mvt)
-            
-            print("")
-            print("\tMouvement: ", mvt)
-
-            if mvt == 0:
-                break
 
     def get_square_solution(self, possible_values, square):
         sq_min = (square * 9)
@@ -373,21 +378,18 @@ class Application(Frame):
 
         for index in range(1,4):
             xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset
-            print("\tcase: ", xindex)
             vert_key.append(xindex)
 
             vert_values.append(possible_values[(xindex -1)])
 
         for index in range(1,4):
             xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 27
-            print("\tcase: ", xindex)
             vert_key.append(xindex)
 
             vert_values.append(possible_values[(xindex -1)])
 
         for index in range(1,4):
             xindex = ((index - 1) * 3) + (col - squareoffset) + yoffset + 54
-            print("\tcase: ", xindex)
             vert_key.append(xindex)
 
             vert_values.append(possible_values[(xindex -1)])
@@ -395,7 +397,7 @@ class Application(Frame):
         self.key_col[col] = vert_key
         self.possible_values_col[col] = vert_values
 
-    def update_possible_values_catalog(self, possible_values, case, value):
+    def update_possible_values_catalog(self, case, value):
         print("Case: ", case)
         print("value to remove: ", value)
 
@@ -426,277 +428,301 @@ class Application(Frame):
         for index in range(0,9):
             if value in self.possible_values_col[col][index]:
                 self.possible_values_col[col][index].remove(value)
+
+    def loop_apply_strategies(self):
+        # Deduct solution
+        full_count = 0
+
+        while True:
+            # Loop
+            mvt = self.iterate_all_strategies()
+            
+            print("")
+            print("\tMouvement: ", mvt)
+            full_count += mvt
+
+            if mvt == 0:
+                break
         
-    def iterate_full_solution(self, possible_values, mvt):
-        print("Begin square loop")
-        for square in range(0,9):
-            if self.iterate_square_solution(square, possible_values, mvt) > 0:
-                return 1
-
-        print("Begin line hori loop")
-        for line in range(1,10):
-            if self.iterate_line_solution(line, possible_values, mvt) > 0:
-                return 1
-        
-        print("Begin col vert loop")
-        for col in range(1,10):
-            if self.iterate_col_solution(col, possible_values, mvt) > 0:
-                return 1
-
-        return mvt
-
-    def iterate_line_solution(self, line, possible_values, mvt):
-        #retrieve values for the line
         print("")
-        hori_values = self.possible_values_line[line]
-        hori_key = self.key_line[line]
-
-        #Check for solutions in the 9 cases of the line
-        print("LINE: ", line)
-        print("\t",hori_values)
-        for index in range(0,9):
-            values = hori_values[index]
-            case_readed = hori_key[index]
-            hori_others_values = []
-            
-            if len(values) == 1:
-                value = values[0]
-                
-                self.entries["text{0}".format(case_readed)].set(value)
-
-                self.update_possible_values_catalog(possible_values, case_readed, value)
-                
-                return 1
-
-            for index2 in range(0,9):
-                if index == index2 or len(hori_values[index2]) == 0:
-                    continue
-
-                hori_others_values = hori_others_values + hori_values[index2]
-
-            hori_others_values = set(hori_others_values)
-            hori_unique_value = set(hori_values[index]) - hori_others_values
-            
-            if len(hori_unique_value) > 0:
-                print("Unique line value:")
-                print(hori_unique_value)
-
-                value = hori_unique_value.pop()
-                
-                self.entries["text{0}".format(case_readed)].set(value)
-                self.update_possible_values_catalog(possible_values, case_readed, value)
-
-                return 1
-
-
-        return mvt
-
-    def iterate_col_solution(self, col, possible_values, mvt):
-        #retrieve values for the line
-        vert_values = self.possible_values_col[col]
-        vert_key = self.key_col[col]
-
-        #Check for solutions in the 9 cases of the col
-        print("COL: ", col)
-        print("\t",vert_values)
-        for index in range(0,9):
-            values = vert_values[index]
-            case_readed = vert_key[index]
-            vert_others_values = []
-            
-            if len(values) == 1:
-                value = values[0]
-                
-                self.entries["text{0}".format(case_readed)].set(value)
-
-                self.update_possible_values_catalog(possible_values, case_readed, value)
-
-                return 1
-
-            for index2 in range(0,9):
-                if index == index2 or len(vert_values[index2]) == 0:
-                    continue
-
-                vert_others_values = vert_others_values + vert_values[index2]
-
-            vert_others_values = set(vert_others_values)
-            vert_unique_value = set(vert_values[index]) - vert_others_values
-            
-            if len(vert_unique_value) > 0:
-                print("Unique col value:")
-                print(vert_unique_value)
-
-                value = vert_unique_value.pop()
-                
-                self.entries["text{0}".format(case_readed)].set(value)
-                self.update_possible_values_catalog(possible_values, case_readed, value)
-
-                return 1
-
-
-        return mvt
-
-    def iterate_square_solution(self, square, possible_values, mvt):
-        square_values = self.possible_values_square[square]
-        sq_min = (square * 9)
-        sq_max = (square * 9) + 9
-
-        print("SQUARE: ", square)
-        print("\t",square_values)
-
-        for index1 in range(0,9):
-            square_others_values = []
-            # Single result -> Set value and retry
-            if len(square_values[index1]) == 1:
-                value = square_values[index1][0]
-                entrycount = sq_min + index1 + 1
-                
-                self.entries["text{0}".format(entrycount)].set(value)
-
-                self.update_possible_values_catalog(possible_values, entrycount, value)
-                
-                return 1
-
-            for index2 in range(0,9):
-                if index1 == index2 or len(square_values[index2]) == 0:
-                    continue
-
-                square_others_values = square_others_values + square_values[index2]
-
-            square_others_values = set(square_others_values)
-            square_unique_value = set(square_values[index1]) - square_others_values
-            
-            if len(square_unique_value) > 0:
-                print("Unique square value:")
-                print(square_unique_value)
-
-                value = square_unique_value.pop()
-                entrycount = sq_min + index1 + 1
-                
-                self.entries["text{0}".format(entrycount)].set(value)
-                self.update_possible_values_catalog(possible_values, entrycount, value)
-
-                return 1
-
-        # Search with exclu number tech
-        for value_to_check in range(1,10):
-            case_to_check = []
-            for case in range(0,9):
-                if value_to_check in self.possible_values_square[square][case]:
-                    case_to_check.append(case)
-
-            case_to_check = set(case_to_check)
-
-            if len(case_to_check) < 2:
-                continue
-
-            print("CE technique:")
-            print("\tValeur a check: ", value_to_check)
-            # Scan each line or col
-            for case in case_to_check:
-                line_found = False
-                col_found = False
-
-                absolute_case = sq_min + case + 1
-                absolute_line = int(((absolute_case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
-                absolute_col = (((absolute_case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
-                print("\tCase a check: ", absolute_case)
-                print("\tLine a check: ", absolute_line)
-                print("\tCol a check: ", absolute_col)
-
-                for line_index in range(len(self.possible_values_line[absolute_line])):
-                    # Check if already present in other case in other square
-                    # Calcul
-                    line_values_to_check = self.possible_values_line[absolute_line][line_index]
-                    # Get case from the line
-                    squareoffset = 0
-                    yoffset = 0
-                    case_from_the_line = 0
-
-                    if absolute_line > 6:
-                        squareoffset = 54
-                        yoffset = 6
-                    elif absolute_line > 3:
-                        squareoffset = 27
-                        yoffset = 3
-                    
-                    xoffset = (absolute_line - 1  - yoffset) * 3
-
-                    if line_index > 5:
-                        case_from_the_line = line_index - 5 + xoffset + squareoffset + 18
-                    elif line_index > 2:
-                        case_from_the_line = line_index - 2 + xoffset + squareoffset + 9
-                    else:
-                        case_from_the_line = line_index + 1 + xoffset + squareoffset
-
-                    square_from_line_to_check = int(case_from_the_line / 9)
-                    # Check if found
-                    if square_from_line_to_check != square and value_to_check in line_values_to_check:
-                        line_found = True
-                        break
-                
-                # If found in another square
-                if not line_found:
-                    print("Values only possible in this square for this line with CE Technique")
-                    if self.clean_line_possible_values_for_ce_technique(square, absolute_line, value_to_check) > 0:
-                        return 1
-
-                for col_index in range(len(self.possible_values_col[absolute_col])):
-                    # Check if already present in other case in other square
-                    # Calcul
-                    col_values_to_check = self.possible_values_col[absolute_col][col_index]
-                    # Get case from the col
-                    case_from_the_col = 0
-                    squareoffset = 0
-                    yoffset = 0
-
-                    if absolute_col > 6:
-                        squareoffset = 6
-                        yoffset = 18
-                    elif absolute_col > 3:
-                        squareoffset = 3
-                        yoffset = 9
-
-                    if col_index > 5:
-                        case_from_the_col = ((col_index - 6) * 3) + (absolute_col - squareoffset) + yoffset + 54
-                    elif col_index > 2:
-                        case_from_the_col = ((col_index - 3) * 3) + (absolute_col - squareoffset) + yoffset + 27
-                    else:
-                        case_from_the_col = ((col_index) * 3) + (absolute_col - squareoffset) + yoffset
-                    
-                    square_from_line_to_check = int(case_from_the_col / 9)
-
-                    # Check if found
-                    if square_from_line_to_check != square and value_to_check in col_values_to_check:
-                        col_found = True
-                        break
-                
-                # If found in another square
-                if not col_found:
-                    print("Values only possible in this square for this col with CE Technique")
-                    if self.clean_col_possible_values_for_ce_technique(square, absolute_col, value_to_check) > 0:
-                        return 1
-
-        #Exclusive pairs
-        exclusive_pairs = {}
-        for index1 in range(0,9):
-            if len(self.possible_values_square[square][index1]) == 2:
-                exclusive_pairs[index1] = self.possible_values_square[square][index1]
+        print("END OF DEDUCT")
+        print("")
+        print("Mouvement: ", full_count)
         
-        if len(exclusive_pairs) > 0:
-            print("EXCLUSIVE PAIRS TO CHECK. square: ", square)
-            for key1 in exclusive_pairs.keys():
-                for key2 in exclusive_pairs.keys():
-                    if key2 == key1:
+    def iterate_all_strategies(self):
+        # S1 - Unique choice scan
+        if self.strategie_1_unique_choice():
+            return 1
+        # S2 - Exclusive number of line or col
+        if self.strategie_2_exclusive_number():
+            return 1
+        # S3 - Exclusive number for square
+        if self.strategie_3_exclusive_region():
+            return 1
+        # S4 - Exclusive pair for line or col or square
+        if self.strategie_4_exclusive_pairs():
+            return 1
+        # S5 - Unique choice for line or col or square
+        if self.strategie_5_unique_choice():
+            return 1
+
+        print("")
+        return 0
+
+    def strategie_1_unique_choice(self):
+        print("")
+        print("#### S1 - Unique choice")
+        for square in range(0,9):
+            square_values = self.possible_values_square[square]
+            sq_min = (square * 9)
+            sq_max = (square * 9) + 9
+
+            for index1 in range(0,9):
+                # Single result -> Set value and retry
+                if len(square_values[index1]) == 1:
+                    value = square_values[index1][0]
+                    entrycount = sq_min + index1 + 1
+                    
+                    self.entries["text{0}".format(entrycount)].set(value)
+                    self.update_possible_values_catalog(entrycount, value)
+                    print("\t\t Found ! ", entrycount)
+                    return True
+
+        return False
+
+    def strategie_2_exclusive_number(self):
+        print("")
+        print("#### S2 - Exclusive number")
+
+        return False
+
+    def strategie_3_exclusive_region(self):
+        print("")
+        print("#### S3 - Exclusive region")
+
+        for square in range(0,9):
+            sq_min = (square * 9)
+
+            # Search with exclu number tech
+            for value_to_check in range(1,10):
+                case_to_check = []
+                for case in range(0,9):
+                    if value_to_check in self.possible_values_square[square][case]:
+                        case_to_check.append(case)
+
+                case_to_check = set(case_to_check)
+
+                if len(case_to_check) < 2:
+                    continue
+
+                # Scan each line or col
+                for case in case_to_check:
+                    line_found = False
+                    col_found = False
+
+                    absolute_case = sq_min + case + 1
+                    absolute_line = int(((absolute_case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
+                    absolute_col = (((absolute_case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
+
+                    for line_index in range(len(self.possible_values_line[absolute_line])):
+                        # Check if already present in other case in other square
+                        # Calcul
+                        line_values_to_check = self.possible_values_line[absolute_line][line_index]
+                        # Get case from the line
+                        squareoffset = 0
+                        yoffset = 0
+                        case_from_the_line = 0
+
+                        if absolute_line > 6:
+                            squareoffset = 54
+                            yoffset = 6
+                        elif absolute_line > 3:
+                            squareoffset = 27
+                            yoffset = 3
+                        
+                        xoffset = (absolute_line - 1  - yoffset) * 3
+
+                        if line_index > 5:
+                            case_from_the_line = line_index - 5 + xoffset + squareoffset + 18
+                        elif line_index > 2:
+                            case_from_the_line = line_index - 2 + xoffset + squareoffset + 9
+                        else:
+                            case_from_the_line = line_index + 1 + xoffset + squareoffset
+
+                        square_from_line_to_check = int(case_from_the_line / 9)
+                        # Check if found
+                        if square_from_line_to_check != square and value_to_check in line_values_to_check:
+                            line_found = True
+                            break
+                    
+                    # If found in another square
+                    if not line_found:
+                        print("\t\t [S3] Values only possible in this square. LINE")
+                        if self.clean_line_possible_values_for_ce_technique(square, absolute_line, value_to_check) > 0:
+                            return True
+
+                    for col_index in range(len(self.possible_values_col[absolute_col])):
+                        # Check if already present in other case in other square
+                        # Calcul
+                        col_values_to_check = self.possible_values_col[absolute_col][col_index]
+                        # Get case from the col
+                        case_from_the_col = 0
+                        squareoffset = 0
+                        yoffset = 0
+
+                        if absolute_col > 6:
+                            squareoffset = 6
+                            yoffset = 18
+                        elif absolute_col > 3:
+                            squareoffset = 3
+                            yoffset = 9
+
+                        if col_index > 5:
+                            case_from_the_col = ((col_index - 6) * 3) + (absolute_col - squareoffset) + yoffset + 54
+                        elif col_index > 2:
+                            case_from_the_col = ((col_index - 3) * 3) + (absolute_col - squareoffset) + yoffset + 27
+                        else:
+                            case_from_the_col = ((col_index) * 3) + (absolute_col - squareoffset) + yoffset
+                        
+                        square_from_line_to_check = int(case_from_the_col / 9)
+
+                        # Check if found
+                        if square_from_line_to_check != square and value_to_check in col_values_to_check:
+                            col_found = True
+                            break
+                    
+                    # If found in another square
+                    if not col_found:
+                        print("\t\t [S3] Values only possible in this square. COL")
+                        if self.clean_col_possible_values_for_ce_technique(square, absolute_col, value_to_check) > 0:
+                            return True
+
+        return False
+
+    def strategie_4_exclusive_pairs(self):
+        print("")
+        print("#### S4 - Exclusive pairs")
+        #Exclusive pairs
+
+        for square in range(0,9):
+            exclusive_pairs = {}
+            for index1 in range(0,9):
+                if len(self.possible_values_square[square][index1]) == 2:
+                    exclusive_pairs[index1] = self.possible_values_square[square][index1]
+            
+            if len(exclusive_pairs) > 0:
+                print("\t\t EXCLUSIVE PAIRS TO CHECK. square: ", square)
+                for key1 in exclusive_pairs.keys():
+                    for key2 in exclusive_pairs.keys():
+                        if key2 == key1:
+                            continue
+
+                        if exclusive_pairs[key1] == exclusive_pairs[key2]:
+                            print("\t\t case found.")
+                            print("\t\t\t ",exclusive_pairs[key1])
+                            print("\t\t\t ",exclusive_pairs[key2])
+
+        return False
+
+    def strategie_5_unique_choice(self):
+        print("")
+        print("#### S5 - Unique choice")
+        
+        print("")
+        print("\t Square part...")
+
+        for square in range(0,9):
+            square_values = self.possible_values_square[square]
+            sq_min = (square * 9)
+
+            for index1 in range(0,9):
+                square_others_values = []
+
+                for index2 in range(0,9):
+                    if index1 == index2 or len(square_values[index2]) == 0:
                         continue
 
-                    if exclusive_pairs[key1] == exclusive_pairs[key2]:
-                        print("case found.")
-                        print("\t",exclusive_pairs[key1])
-                        print("\t",exclusive_pairs[key2])
+                    square_others_values = square_others_values + square_values[index2]
 
-        return mvt
+                square_others_values = set(square_others_values)
+                square_unique_value = set(square_values[index1]) - square_others_values
+                
+                if len(square_unique_value) > 0:
+                    entrycount = sq_min + index1 + 1
+                    print("\t\t Unique square value: ", entrycount, square_unique_value)
 
+                    value = square_unique_value.pop()
+                    
+                    self.entries["text{0}".format(entrycount)].set(value)
+                    self.update_possible_values_catalog(entrycount, value)
+
+                    return True
+        print("")
+        print("\t Line part...")
+
+        for line in range(1,10):
+            #retrieve values for the line
+            hori_values = self.possible_values_line[line]
+            hori_key = self.key_line[line]
+
+            #Check for solutions in the 9 cases of the line
+            for index in range(0,9):
+                values = hori_values[index]
+                case_readed = hori_key[index]
+                hori_others_values = []
+
+                for index2 in range(0,9):
+                    if index == index2 or len(hori_values[index2]) == 0:
+                        continue
+
+                    hori_others_values = hori_others_values + hori_values[index2]
+
+                hori_others_values = set(hori_others_values)
+                hori_unique_value = set(hori_values[index]) - hori_others_values
+                
+                if len(hori_unique_value) > 0:
+                    print("\t\t Unique line value: ", case_readed, hori_unique_value)
+
+                    value = hori_unique_value.pop()
+                    
+                    self.entries["text{0}".format(case_readed)].set(value)
+                    self.update_possible_values_catalog(case_readed, value)
+
+                    return True
+
+        print("")
+        print("\t Col part...")
+
+        for col in range(1,10):
+            #retrieve values for the line
+            vert_values = self.possible_values_col[col]
+            vert_key = self.key_col[col]
+            
+            for index in range(0,9):
+                values = vert_values[index]
+                case_readed = vert_key[index]
+                vert_others_values = []
+
+                for index2 in range(0,9):
+                    if index == index2 or len(vert_values[index2]) == 0:
+                        continue
+
+                    vert_others_values = vert_others_values + vert_values[index2]
+
+                vert_others_values = set(vert_others_values)
+                vert_unique_value = set(vert_values[index]) - vert_others_values
+                
+                if len(vert_unique_value) > 0:
+                    print("\t\t Unique col value: ", case_readed, vert_unique_value)
+
+                    value = vert_unique_value.pop()
+                    
+                    self.entries["text{0}".format(case_readed)].set(value)
+                    self.update_possible_values_catalog(case_readed, value)
+
+                    return True
+
+        return False
 
 
     def clean_line_possible_values_for_ce_technique(self, square, absolute_line, value_to_check):
@@ -750,58 +776,6 @@ class Application(Frame):
                     deleted += 1
 
         return deleted
-
-    def create_widgets(self, frame=None):
-        self.entrycount = 1
-        self.offsetx = 0
-        self.offsety = 0
-
-        # self.label = Label(self, text='Affichage')
-        # self.label.grid(column=0, row=10)
-
-        for self.iti1 in range(1,10):
-            
-            self.posx = self.offsetx
-            self.posy = self.offsety
-            
-            for self.iti2 in range(0,9):
-                # Each 3 slot, return x to 0 and offset
-                self.modulo=(self.posx % 3)
-                if self.modulo != 3 and self.modulo == 0:
-                    self.posx = self.offsetx
-                    self.posy += 1
-                
-                # create text variable 
-                self.text = StringVar()
-
-                # Create entries
-                self.entry = Entry(self, width=4, textvariable=self.text)
-                self.entry.grid(column=self.posx, row=self.posy)
-
-                # Pre-load sudoku
-                if self.entrycount in self.entries_generated:
-                    self.text.set(self.entries_generated[self.entrycount])
-                    self.entry.config(state='disabled')
-
-                self.entry.bind('<KeyRelease>', lambda event, v=self.text, posx=self.posx, posy=self.posy: self.update_entry_value(event, v, posx, posy))
-
-                self.entries["entry{0}".format(self.entrycount)] = self.entry
-                self.entries["text{0}".format(self.entrycount)] = self.text
-                self.entries_hori[(self.posy-1)]["entry{0}".format(self.posx)] = self.entry
-                self.entries_vert[self.posx]["entry{0}".format((self.posy-1))] = self.entry
-                
-                # Increment
-                self.entrycount += 1
-                self.posx += 1
-
-            # Increment position for next 9 blocs
-            if (self.iti1 % 3) == 0:
-                self.offsetx = 0
-                self.offsety += 3
-            else:
-                self.offsetx += 3
-
-        self.search_good_values()
 
 
 root = Tk()
