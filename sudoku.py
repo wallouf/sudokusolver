@@ -7,6 +7,13 @@ class Application(Frame):
         super().__init__(master)
         self.master = master
         self.entries={}
+        self.entries_hori=[]
+        self.entries_vert=[]
+
+        for iti1 in range(1,10):
+            self.entries_hori.append({})
+            self.entries_vert.append({})
+
         
         # self.f1 = Frame(master)
         # self.f1.grid(row=0, column=0)
@@ -70,7 +77,36 @@ class Application(Frame):
         if widgetvalue in square_dict:
             text.set("")
             return
-        # check for lines
+        
+        # check for lines H
+        h_lines_dict = {}
+        h_lines_entries = self.entries_hori[(posy-1)]
+
+        for iti1 in range(0,9):
+            if (posx-1) == iti1:
+                continue
+            actual_value = h_lines_entries.get("entry{0}".format(iti1)).get()
+            if actual_value.isdecimal():
+                h_lines_dict[actual_value] = ""
+        
+        if widgetvalue in h_lines_dict:
+            text.set("")
+            return
+        
+        # check for lines V
+        v_lines_dict = {}
+        v_lines_entries = self.entries_vert[(posx-1)]
+
+        for iti1 in range(0,9):
+            if (posy-1) == iti1:
+                continue
+            actual_value = v_lines_entries.get("entry{0}".format(iti1)).get()
+            if actual_value.isdecimal():
+                v_lines_dict[actual_value] = ""
+        
+        if widgetvalue in v_lines_dict:
+            text.set("")
+            return
 
 
     def update_entry_value(self, event, text, posx, posy):
@@ -114,6 +150,8 @@ class Application(Frame):
                 self.entry.bind('<KeyRelease>', lambda event, v=self.text, posx=self.posx, posy=self.posy: self.update_entry_value(event, v, posx, posy))
 
                 self.entries["entry{0}".format(self.entrycount)] = self.entry
+                self.entries_hori[(self.posy-1)]["entry{0}".format(self.posx)] = self.entry
+                self.entries_vert[self.posx]["entry{0}".format((self.posy-1))] = self.entry
                 
                 # Increment
                 self.entrycount += 1
