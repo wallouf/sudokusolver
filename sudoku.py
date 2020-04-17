@@ -406,7 +406,7 @@ class Application(Frame):
         line = int(((case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
         col = (((case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
         
-        square_item = case - (square * 9)
+        square_item = case - 1 - (square * 9)
         line_item = col - 1
         col_item = line - 1
 
@@ -453,8 +453,8 @@ class Application(Frame):
         # S1 - Unique choice scan
         if self.strategie_1_unique_choice():
             return 1
-        # S2 - Exclusive number of line or col
-        if self.strategie_2_exclusive_number():
+        # S2 - Hidden unique choice for line or col or square
+        if self.strategie_2_hidden_unique_choice():
             return 1
         # S3 - Exclusive number for square
         if self.strategie_3_exclusive_region():
@@ -462,8 +462,8 @@ class Application(Frame):
         # S4 - Exclusive pair for line or col or square
         if self.strategie_4_exclusive_pairs():
             return 1
-        # S5 - Unique choice for line or col or square
-        if self.strategie_5_unique_choice():
+        # S5 - Exclusive number of line or col
+        if self.strategie_5_exclusive_number_in_line_or_col():
             return 1
 
         print("")
@@ -485,14 +485,111 @@ class Application(Frame):
                     
                     self.entries["text{0}".format(entrycount)].set(value)
                     self.update_possible_values_catalog(entrycount, value)
-                    print("\t\t Found ! ", entrycount)
+                    print("\t\t ------------ Found ! ------------", entrycount)
                     return True
 
         return False
 
-    def strategie_2_exclusive_number(self):
+    def strategie_2_hidden_unique_choice(self):
         print("")
-        print("#### S2 - Exclusive number")
+        print("#### S2 - Hidden unique choice")
+        
+        print("")
+        print("\t Square part...")
+
+        for square in range(0,9):
+            square_values = self.possible_values_square[square]
+            sq_min = (square * 9)
+
+            for index1 in range(0,9):
+                square_others_values = []
+
+                for index2 in range(0,9):
+                    if index1 == index2 or len(square_values[index2]) == 0:
+                        continue
+
+                    square_others_values = square_others_values + square_values[index2]
+
+                square_others_values = set(square_others_values)
+                square_unique_value = set(square_values[index1]) - square_others_values
+                
+                if len(square_unique_value) > 0:
+                    entrycount = sq_min + index1 + 1
+                    print("\t\t ------------ Found ! ------------")
+                    print("\t\t Unique square value: ", entrycount, square_unique_value)
+
+                    value = square_unique_value.pop()
+                    
+                    self.entries["text{0}".format(entrycount)].set(value)
+                    self.update_possible_values_catalog(entrycount, value)
+
+                    return True
+        print("")
+        print("\t Line part...")
+
+        for line in range(1,10):
+            #retrieve values for the line
+            hori_values = self.possible_values_line[line]
+            hori_key = self.key_line[line]
+
+            #Check for solutions in the 9 cases of the line
+            for index in range(0,9):
+                values = hori_values[index]
+                case_readed = hori_key[index]
+                hori_others_values = []
+
+                for index2 in range(0,9):
+                    if index == index2 or len(hori_values[index2]) == 0:
+                        continue
+
+                    hori_others_values = hori_others_values + hori_values[index2]
+
+                hori_others_values = set(hori_others_values)
+                hori_unique_value = set(hori_values[index]) - hori_others_values
+                
+                if len(hori_unique_value) > 0:
+                    print("\t\t ------------ Found ! ------------")
+                    print("\t\t Unique line value: ", case_readed, hori_unique_value)
+
+                    value = hori_unique_value.pop()
+                    
+                    self.entries["text{0}".format(case_readed)].set(value)
+                    self.update_possible_values_catalog(case_readed, value)
+
+                    return True
+
+        print("")
+        print("\t Col part...")
+
+        for col in range(1,10):
+            #retrieve values for the line
+            vert_values = self.possible_values_col[col]
+            vert_key = self.key_col[col]
+            
+            for index in range(0,9):
+                values = vert_values[index]
+                case_readed = vert_key[index]
+                vert_others_values = []
+
+                for index2 in range(0,9):
+                    if index == index2 or len(vert_values[index2]) == 0:
+                        continue
+
+                    vert_others_values = vert_others_values + vert_values[index2]
+
+                vert_others_values = set(vert_others_values)
+                vert_unique_value = set(vert_values[index]) - vert_others_values
+                
+                if len(vert_unique_value) > 0:
+                    print("\t\t ------------ Found ! ------------")
+                    print("\t\t Unique col value: ", case_readed, vert_unique_value)
+
+                    value = vert_unique_value.pop()
+                    
+                    self.entries["text{0}".format(case_readed)].set(value)
+                    self.update_possible_values_catalog(case_readed, value)
+
+                    return True
 
         return False
 
@@ -559,6 +656,10 @@ class Application(Frame):
                     if not line_found:
                         print("\t\t [S3] Values only possible in this square. LINE")
                         if self.clean_line_possible_values_for_ce_technique(square, absolute_line, value_to_check) > 0:
+                            print("\t\t ------------ Found ! ------------")
+                            print("\t\t Square: ", square)
+                            print("\t\t Case: ", absolute_case)
+                            print("\t\t Value: ", value_to_check)
                             return True
 
                     for col_index in range(len(self.possible_values_col[absolute_col])):
@@ -595,6 +696,10 @@ class Application(Frame):
                     if not col_found:
                         print("\t\t [S3] Values only possible in this square. COL")
                         if self.clean_col_possible_values_for_ce_technique(square, absolute_col, value_to_check) > 0:
+                            print("\t\t ------------ Found ! ------------")
+                            print("\t\t Square: ", square)
+                            print("\t\t Case: ", absolute_case)
+                            print("\t\t Value: ", value_to_check)
                             return True
 
         return False
@@ -618,111 +723,197 @@ class Application(Frame):
                             continue
 
                         if exclusive_pairs[key1] == exclusive_pairs[key2]:
+                            print("\t\t ------------ Found ! ------------")
                             print("\t\t case found.")
                             print("\t\t\t ",exclusive_pairs[key1])
                             print("\t\t\t ",exclusive_pairs[key2])
 
         return False
 
-    def strategie_5_unique_choice(self):
+    def check_items_in_same_line(absolute_case_item1, absolute_case_item2):
+        return False
+
+    def check_items_in_same_col(absolute_case_item1, absolute_case_item2):
+        return False
+
+    def strategie_5_exclusive_number_in_line_or_col(self):
         print("")
-        print("#### S5 - Unique choice")
-        
-        print("")
-        print("\t Square part...")
+        print("#### S5 - Exclusive number in line / col")
 
         for square in range(0,9):
-            square_values = self.possible_values_square[square]
-            sq_min = (square * 9)
-
+            print("")
+            print("Square: ", square)
+            print("")
+            print("")
             for index1 in range(0,9):
-                square_others_values = []
+                item1_case = index1 + 1 + (square * 9)
+                item1_line = int(((item1_case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
+                item1_col = (((item1_case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
+                item1_posx = item1_col - 1
+                item1_posy = item1_line - 1
+                print("\t\t\t Case", item1_case)
+                print("\t\t\t Line", item1_line)
+                print("\t\t\t Col", item1_col)
+                print("\t\t\t X", item1_posx)
+                print("\t\t\t Y", item1_posy)
+                
+                for tested_value in range(1,10):
+                    print("\t\t\t\t Value to test: ", tested_value)
+                    if tested_value not in self.possible_values_square[square][index1]:
+                        continue
+                    
 
-                for index2 in range(0,9):
-                    if index1 == index2 or len(square_values[index2]) == 0:
+                    found_aligned_line_index = []
+                    found_aligned_col_index = []
+
+                    found_aligned_line_index.append(item1_posx)
+                    found_aligned_col_index.append(item1_posy)
+                    
+                    found_line_aligned = False
+                    found_col_aligned = False
+                    # Check other case
+                    for index2 in range(0,9):
+                        if index2 == index1:
+                            continue
+                        # If the tested value is in this case too -> Check line
+                        print("\t\t\t\t Values: ", self.possible_values_square[square][index2])
+                        if tested_value in self.possible_values_square[square][index2]:
+                            item2_case = index2 + 1 + (square * 9)
+                            item2_line = int(((item2_case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
+                            item2_col = (((item2_case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
+                            item2_posx = item2_col - 1
+                            item2_posy = item2_line - 1
+                            print("\t\t\t\t Case", item2_case)
+                            print("\t\t\t\t Line", item2_line)
+                            print("\t\t\t\t Col", item2_col)
+                            print("\t\t\t\t X", item2_posx)
+                            print("\t\t\t\t Y", item2_posy)
+
+                            if item1_line == item2_line and not found_col_aligned:
+                                found_line_aligned = True
+                                print("Found two case aligned on the same LINE with same value.")
+                                found_aligned_line_index.append(item2_posx)
+
+                            elif item1_col == item2_col and not found_line_aligned:
+                                found_col_aligned = True
+                                print("Found two case aligned on the same COL with same value")
+                                found_aligned_col_index.append(item2_posy)
+
+                            else:
+                                print("Found two case with same value but not aligned")
+                                found_line_aligned = False
+                                found_col_aligned = False
+                                break
+
+
+                    #Not found or not in the same line or col
+                    if not found_line_aligned and not found_col_aligned:
+                        print("Not aligned")
                         continue
 
-                    square_others_values = square_others_values + square_values[index2]
-
-                square_others_values = set(square_others_values)
-                square_unique_value = set(square_values[index1]) - square_others_values
-                
-                if len(square_unique_value) > 0:
-                    entrycount = sq_min + index1 + 1
-                    print("\t\t Unique square value: ", entrycount, square_unique_value)
-
-                    value = square_unique_value.pop()
+                    cleaning_required = False
                     
-                    self.entries["text{0}".format(entrycount)].set(value)
-                    self.update_possible_values_catalog(entrycount, value)
+                    # Browse line in other square to clean
+                    if found_line_aligned:
+                        for line_index in range(0,9):
+                            if line_index in found_aligned_line_index:
+                                continue
+                            if tested_value in self.possible_values_line[item1_line][line_index]:
+                                cleaning_required = True
+                                self.possible_values_line[item1_line][line_index].remove(tested_value)
+                                print("\t\t ------------ Found LINE ! ------------")
+                                print("\t\t Choice to remove:")
+                                print("\t\t Value", tested_value)
 
-                    return True
-        print("")
-        print("\t Line part...")
+                                # lelelele
+                                squareoffset = 0
+                                yoffset = 0
 
-        for line in range(1,10):
-            #retrieve values for the line
-            hori_values = self.possible_values_line[line]
-            hori_key = self.key_line[line]
+                                if item1_line > 6:
+                                    squareoffset = 54
+                                    yoffset = 6
+                                elif item1_line > 3:
+                                    squareoffset = 27
+                                    yoffset = 3
+                                
+                                xoffset = (item1_line - 1  - yoffset) * 3
+        
+                                for index_to_clean in range(1,4):
+                                    xindex_to_clean = index_to_clean + xoffset + squareoffset
+                                    self.s5_clean_col_and_square(tested_value, item1_line, xindex)
 
-            #Check for solutions in the 9 cases of the line
-            for index in range(0,9):
-                values = hori_values[index]
-                case_readed = hori_key[index]
-                hori_others_values = []
+                                for index in range(1,4):
+                                    xindex = index + xoffset + squareoffset + 9
+                                    self.s5_clean_col_and_square(tested_value, item1_line, xindex)
 
-                for index2 in range(0,9):
-                    if index == index2 or len(hori_values[index2]) == 0:
-                        continue
+                                for index in range(1,4):
+                                    xindex = index + xoffset + squareoffset + 18
+                                    self.s5_clean_col_and_square(tested_value, item1_line, xindex)
 
-                    hori_others_values = hori_others_values + hori_values[index2]
+                    # Browse col in other square to clean
+                    if found_col_aligned:
+                        for col_index in range(0,9):
+                            if col_index in found_aligned_col_index:
+                                continue
+                            if tested_value in self.possible_values_col[item1_col][col_index]:
+                                cleaning_required = True
+                                self.possible_values_col[item1_col][col_index].remove(tested_value)
+                                print("\t\t ------------ Found COL ! ------------")
+                                print("\t\t Choice to remove:")
+                                print("\t\t Value", tested_value)
+        
+                                squareoffset = 0
+                                yoffset = 0
 
-                hori_others_values = set(hori_others_values)
-                hori_unique_value = set(hori_values[index]) - hori_others_values
-                
-                if len(hori_unique_value) > 0:
-                    print("\t\t Unique line value: ", case_readed, hori_unique_value)
+                                if item1_col > 6:
+                                    squareoffset = 6
+                                    yoffset = 18
+                                elif item1_col > 3:
+                                    squareoffset = 3
+                                    yoffset = 9
 
-                    value = hori_unique_value.pop()
-                    
-                    self.entries["text{0}".format(case_readed)].set(value)
-                    self.update_possible_values_catalog(case_readed, value)
+                                for index in range(1,4):
+                                    xindex = ((index - 1) * 3) + (item1_col - squareoffset) + yoffset
+                                    self.s5_clean_line_and_square(tested_value, item1_col, xindex)
 
-                    return True
+                                for index in range(1,4):
+                                    xindex = ((index - 1) * 3) + (item1_col - squareoffset) + yoffset + 27
+                                    self.s5_clean_line_and_square(tested_value, item1_col, xindex)
 
-        print("")
-        print("\t Col part...")
+                                for index in range(1,4):
+                                    xindex = ((index - 1) * 3) + (item1_col - squareoffset) + yoffset + 54
+                                    self.s5_clean_line_and_square(tested_value, item1_col, xindex)
 
-        for col in range(1,10):
-            #retrieve values for the line
-            vert_values = self.possible_values_col[col]
-            vert_key = self.key_col[col]
-            
-            for index in range(0,9):
-                values = vert_values[index]
-                case_readed = vert_key[index]
-                vert_others_values = []
-
-                for index2 in range(0,9):
-                    if index == index2 or len(vert_values[index2]) == 0:
-                        continue
-
-                    vert_others_values = vert_others_values + vert_values[index2]
-
-                vert_others_values = set(vert_others_values)
-                vert_unique_value = set(vert_values[index]) - vert_others_values
-                
-                if len(vert_unique_value) > 0:
-                    print("\t\t Unique col value: ", case_readed, vert_unique_value)
-
-                    value = vert_unique_value.pop()
-                    
-                    self.entries["text{0}".format(case_readed)].set(value)
-                    self.update_possible_values_catalog(case_readed, value)
-
-                    return True
+                    if cleaning_required:
+                        return True
 
         return False
+
+    def s5_clean_col_and_square(self, tested_value, line, xindex_to_clean):
+        square_to_clean = int((xindex_to_clean - 1) / 9)
+        col_to_clean = (((xindex_to_clean - 1) - (square_to_clean * 9)) % 3) + 1 + ((square_to_clean % 3) * 3)
+        
+        square_item_to_clean = xindex_to_clean - 1 - (square_to_clean * 9)
+        col_item_to_clean = line - 1
+        
+        if tested_value in self.possible_values_col[col_to_clean][col_item_to_clean]:
+            self.possible_values_col[col_to_clean][col_item_to_clean].remove(tested_value)
+        
+        if tested_value in self.possible_values_square[square_to_clean][square_item_to_clean]:
+            self.possible_values_square[square_to_clean][square_item_to_clean].remove(tested_value)
+
+    def s5_clean_line_and_square(self, tested_value, col, xindex_to_clean):
+        square_to_clean = int((xindex_to_clean - 1) / 9)
+        line_to_clean = int(((xindex_to_clean-(square_to_clean*9))-1)/3) + 1 + (int(square_to_clean/3) * 3)
+        
+        square_item_to_clean = xindex_to_clean - 1 - (square_to_clean * 9)
+        line_item_to_clean = col - 1
+        
+        if tested_value in self.possible_values_line[line_to_clean][line_item_to_clean]:
+            self.possible_values_line[line_to_clean][line_item_to_clean].remove(tested_value)
+        
+        if tested_value in self.possible_values_square[square_to_clean][square_item_to_clean]:
+            self.possible_values_square[square_to_clean][square_item_to_clean].remove(tested_value)
 
 
     def clean_line_possible_values_for_ce_technique(self, square, absolute_line, value_to_check):
