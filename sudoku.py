@@ -268,17 +268,82 @@ class Application(Frame):
                 offsetx += 3
 
         #Search for square solution
+        mvt = 0
+
+        while True:
+            mvt = 0
+            # Loop
+            mvt = self.iterate_full_solution(possible_values, mvt)
+
+            if mvt == 0:
+                break
+
+        
+    def iterate_full_solution(self, possible_values, mvt):
+        print("Begin square loop")
         for square in range(0,9):
             print("")
-            possible_values = self.iterate_square_solution(square, possible_values)
+            mvt = self.iterate_square_solution(square, possible_values, mvt)
+            print("\tMouvement: ", mvt)
+
+        print("Begin case loop")
+        for case in range(1,82):
+            # Remove square
+            square = int((case - 1) / 9)
+            possquare = int(case % 9)
+            
+
+            # Calculate X & Y position
+            posy = int((possquare - 1) / 3) + 1
+            
+            if possquare == 0:
+                possquare = 9
+                posy = 3
+            
+            posx = (possquare % 3)
+            if posx == 0:
+                posx = 3
+
+            offsetsquarex = square
+            offsetsquarey = 0
+            if square > 5:
+                offsetsquarex -= 6
+                offsetsquarey = 6
+            elif square > 2:
+                offsetsquarex -= 3
+                offsetsquarey = 3
+            
+            posx += (offsetsquarex * 3)
+            posy += offsetsquarey
+
+            print("\t",case)
+            print("\t",posx)
+            print("\t",posy)
+            print("")
 
 
-    def iterate_square_solution(self, square, possible_values):
+
+
+        return mvt
+
+    def iterate_hori_solution(self, posx, posy, possible_values, mvt):
+        return mvt
+
+
+
+
+    def iterate_vert_solution(self, posx, posy, possible_values, mvt):
+        return mvt
+
+    def iterate_square_solution(self, square, possible_values, mvt):
         sq_min = (square * 9)
         sq_max = (square * 9) + 9
         square_values = possible_values[sq_min:sq_max]
 
         print("Values:")
+        print(possible_values)
+        print(sq_min)
+        print(sq_max)
         print(square_values)
 
         for index1 in range(0,9):
@@ -293,7 +358,12 @@ class Application(Frame):
                         item.remove(value)
                 
                 self.entries["text{0}".format(entrycount)].set(value)
-                return self.iterate_square_solution(square, possible_values)
+                mvt += 1
+                
+                print("Test")
+                print(possible_values[sq_min:sq_max])
+
+                return self.iterate_square_solution(square, possible_values, mvt)
 
 
             for index2 in range(0,9):
@@ -309,7 +379,7 @@ class Application(Frame):
             print("Unique value:")
             print(square_unique_value)
 
-        return possible_values
+        return mvt
 
 
     def update_entry_value(self, event, text, posx, posy):
