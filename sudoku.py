@@ -27,7 +27,7 @@ class Application(Frame):
             self.entries_hori.append({})
             self.entries_vert.append({})
         
-        self.generate_sudoku()
+        self.generate_sudoku_lvl_30()
         self.pack()
         self.create_sudoku_grid()
         
@@ -88,7 +88,39 @@ class Application(Frame):
             else:
                 self.offsetx += 3
 
-    def generate_sudoku(self):
+    def generate_sudoku_lvl_29(self):
+        self.entries_generated[6] = 7
+        self.entries_generated[7] = 8
+        self.entries_generated[9] = 5
+
+        self.entries_generated[13] = 1
+        self.entries_generated[14] = 4
+        self.entries_generated[15] = 9
+        
+        self.entries_generated[22] = 3
+        self.entries_generated[25] = 9
+        self.entries_generated[27] = 6
+        
+        self.entries_generated[29] = 1
+        
+        self.entries_generated[37] = 6
+        self.entries_generated[38] = 8
+        self.entries_generated[39] = 4
+        self.entries_generated[44] = 3
+        
+        self.entries_generated[47] = 7
+        
+        self.entries_generated[55] = 9
+        self.entries_generated[59] = 6
+        
+        self.entries_generated[70] = 9
+        self.entries_generated[71] = 2
+        self.entries_generated[72] = 5
+        
+        self.entries_generated[75] = 4
+        self.entries_generated[77] = 8
+
+    def generate_sudoku_lvl_30(self):
         self.entries_generated[2] = 5
         self.entries_generated[5] = 9
         
@@ -119,7 +151,6 @@ class Application(Frame):
         self.entries_generated[76] = 6
         self.entries_generated[78] = 3
         self.entries_generated[81] = 4
-        return
     
     def update_entry_value(self, event, text, posx, posy):
         # value
@@ -434,6 +465,15 @@ class Application(Frame):
         full_count = 0
 
         while True:
+            print("")
+            print("")
+            print("Values:")
+            for square in range(0,9):
+                for values in range(len(self.possible_values_square[square])):
+                    print("\t ",self.possible_values_square[square][values])
+                print("")
+            print("")
+            print("")
             # Loop
             mvt = self.iterate_all_strategies()
             
@@ -730,35 +770,19 @@ class Application(Frame):
 
         return False
 
-    def check_items_in_same_line(absolute_case_item1, absolute_case_item2):
-        return False
-
-    def check_items_in_same_col(absolute_case_item1, absolute_case_item2):
-        return False
-
     def strategie_5_exclusive_number_in_line_or_col(self):
         print("")
         print("#### S5 - Exclusive number in line / col")
 
         for square in range(0,9):
-            print("")
-            print("Square: ", square)
-            print("")
-            print("")
             for index1 in range(0,9):
                 item1_case = index1 + 1 + (square * 9)
                 item1_line = int(((item1_case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
                 item1_col = (((item1_case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
                 item1_posx = item1_col - 1
                 item1_posy = item1_line - 1
-                print("\t\t\t Case", item1_case)
-                print("\t\t\t Line", item1_line)
-                print("\t\t\t Col", item1_col)
-                print("\t\t\t X", item1_posx)
-                print("\t\t\t Y", item1_posy)
                 
                 for tested_value in range(1,10):
-                    print("\t\t\t\t Value to test: ", tested_value)
                     if tested_value not in self.possible_values_square[square][index1]:
                         continue
                     
@@ -776,31 +800,22 @@ class Application(Frame):
                         if index2 == index1:
                             continue
                         # If the tested value is in this case too -> Check line
-                        print("\t\t\t\t Values: ", self.possible_values_square[square][index2])
                         if tested_value in self.possible_values_square[square][index2]:
                             item2_case = index2 + 1 + (square * 9)
                             item2_line = int(((item2_case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
                             item2_col = (((item2_case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
                             item2_posx = item2_col - 1
                             item2_posy = item2_line - 1
-                            print("\t\t\t\t Case", item2_case)
-                            print("\t\t\t\t Line", item2_line)
-                            print("\t\t\t\t Col", item2_col)
-                            print("\t\t\t\t X", item2_posx)
-                            print("\t\t\t\t Y", item2_posy)
 
                             if item1_line == item2_line and not found_col_aligned:
                                 found_line_aligned = True
-                                print("Found two case aligned on the same LINE with same value.")
                                 found_aligned_line_index.append(item2_posx)
 
                             elif item1_col == item2_col and not found_line_aligned:
                                 found_col_aligned = True
-                                print("Found two case aligned on the same COL with same value")
                                 found_aligned_col_index.append(item2_posy)
 
                             else:
-                                print("Found two case with same value but not aligned")
                                 found_line_aligned = False
                                 found_col_aligned = False
                                 break
@@ -808,8 +823,10 @@ class Application(Frame):
 
                     #Not found or not in the same line or col
                     if not found_line_aligned and not found_col_aligned:
-                        print("Not aligned")
+                        print("\t\t\t Not aligned")
                         continue
+                    else:
+                        print("\t\t\t Aligned. Line / Col", found_line_aligned, found_col_aligned)
 
                     cleaning_required = False
                     
@@ -837,18 +854,17 @@ class Application(Frame):
                                     yoffset = 3
                                 
                                 xoffset = (item1_line - 1  - yoffset) * 3
-        
-                                for index_to_clean in range(1,4):
-                                    xindex_to_clean = index_to_clean + xoffset + squareoffset
-                                    self.s5_clean_col_and_square(tested_value, item1_line, xindex)
-
-                                for index in range(1,4):
-                                    xindex = index + xoffset + squareoffset + 9
-                                    self.s5_clean_col_and_square(tested_value, item1_line, xindex)
-
-                                for index in range(1,4):
-                                    xindex = index + xoffset + squareoffset + 18
-                                    self.s5_clean_col_and_square(tested_value, item1_line, xindex)
+                                index_to_clean = 0
+                                
+                                if line_index > 5:
+                                    index_to_clean = 18 + line_index - 5
+                                elif line_index > 2:
+                                    index_to_clean = 9 + line_index - 2
+                                else:
+                                    index_to_clean = line_index + 1
+                                
+                                xindex_to_clean = index_to_clean + xoffset + squareoffset
+                                self.s5_clean_col_and_square(tested_value, item1_line, xindex)
 
                     # Browse col in other square to clean
                     if found_col_aligned:
@@ -861,7 +877,8 @@ class Application(Frame):
                                 print("\t\t ------------ Found COL ! ------------")
                                 print("\t\t Choice to remove:")
                                 print("\t\t Value", tested_value)
-        
+
+                                # From colonne & col_index -> Get square / square index / line / line index
                                 squareoffset = 0
                                 yoffset = 0
 
@@ -871,18 +888,23 @@ class Application(Frame):
                                 elif item1_col > 3:
                                     squareoffset = 3
                                     yoffset = 9
+                                
+                                index_to_clean = 0
+                                offset_to_add = 0
+                                
+                                if col_index > 5:
+                                    index_to_clean = col_index - 5
+                                    offset_to_add = 54
+                                elif col_index > 2:
+                                    index_to_clean = col_index - 2
+                                    offset_to_add = 27
+                                else:
+                                    index_to_clean = col_index + 1
 
-                                for index in range(1,4):
-                                    xindex = ((index - 1) * 3) + (item1_col - squareoffset) + yoffset
-                                    self.s5_clean_line_and_square(tested_value, item1_col, xindex)
+                                xindex = ((index_to_clean - 1) * 3) + (item1_col - squareoffset) + yoffset + offset_to_add
 
-                                for index in range(1,4):
-                                    xindex = ((index - 1) * 3) + (item1_col - squareoffset) + yoffset + 27
-                                    self.s5_clean_line_and_square(tested_value, item1_col, xindex)
 
-                                for index in range(1,4):
-                                    xindex = ((index - 1) * 3) + (item1_col - squareoffset) + yoffset + 54
-                                    self.s5_clean_line_and_square(tested_value, item1_col, xindex)
+                                self.s5_clean_line_and_square(tested_value, item1_col, xindex)
 
                     if cleaning_required:
                         return True
