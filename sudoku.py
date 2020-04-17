@@ -3,6 +3,7 @@ from tkinter import *
 import time
 
 current_milli_time = lambda: int(round(time.time() * 1000))
+
                 
 class Application(Frame):
     def __init__(self, master=None):
@@ -628,7 +629,6 @@ class Application(Frame):
                     else:
                         case_from_the_line = line_index + 1 + xoffset + squareoffset
 
-                    print("\t\t line check for case: ", case_from_the_line)
                     square_from_line_to_check = int(case_from_the_line / 9)
                     # Check if found
                     if square_from_line_to_check != square and value_to_check in line_values_to_check:
@@ -664,7 +664,6 @@ class Application(Frame):
                     else:
                         case_from_the_col = ((col_index) * 3) + (absolute_col - squareoffset) + yoffset
                     
-                    print("\t\t col check for case: ", case_from_the_col)
                     square_from_line_to_check = int(case_from_the_col / 9)
 
                     # Check if found
@@ -678,7 +677,27 @@ class Application(Frame):
                     if self.clean_col_possible_values_for_ce_technique(square, absolute_col, value_to_check) > 0:
                         return 1
 
+        #Exclusive pairs
+        exclusive_pairs = {}
+        for index1 in range(0,9):
+            if len(self.possible_values_square[square][index1]) == 2:
+                exclusive_pairs[index1] = self.possible_values_square[square][index1]
+        
+        if len(exclusive_pairs) > 0:
+            print("EXCLUSIVE PAIRS TO CHECK. square: ", square)
+            for key1 in exclusive_pairs.keys():
+                for key2 in exclusive_pairs.keys():
+                    if key2 == key1:
+                        continue
+
+                    if exclusive_pairs[key1] == exclusive_pairs[key2]:
+                        print("case found.")
+                        print("\t",exclusive_pairs[key1])
+                        print("\t",exclusive_pairs[key2])
+
         return mvt
+
+
 
     def clean_line_possible_values_for_ce_technique(self, square, absolute_line, value_to_check):
         deleted = 0
@@ -689,17 +708,10 @@ class Application(Frame):
             col_to_clean = ((case_to_clean - (square * 9)) % 3) + 1 + ((square % 3) * 3)
             posx_to_clean = col_to_clean - 1
             posy_to_clean = line_to_clean - 1
-            print("")
-            print("\t\t",case_to_clean)
-            print("\t\t",line_to_clean)
-            print("\t\t",col_to_clean)
-            print("\t\t",posx_to_clean)
-            print("\t\t",posy_to_clean)
             
             if absolute_line != line_to_clean:
                 # clean
                 if value_to_check in self.possible_values_square[square][ite]:
-                    print("\t\t\t CLEAN")
                     self.possible_values_square[square][ite].remove(value_to_check)
                     deleted += 1
                 # clean
