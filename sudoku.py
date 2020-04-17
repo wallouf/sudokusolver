@@ -159,12 +159,12 @@ class Application(Frame):
             posy = offsety
             print("")
             print("")
-            print("offsetX:")
-            print(offsetx)
-            print("offsetY:")
-            print(offsety)
-            print("")
-            print("")
+            # print("offsetX:")
+            # print(offsetx)
+            # print("offsetY:")
+            # print(offsety)
+            # print("")
+            # print("")
             
             for iti2 in range(0,9):
                 # Each 3 slot, return x to 0 and offset
@@ -181,16 +181,16 @@ class Application(Frame):
                     
                     continue
                 
-                print("")
-                print("")
-                print("Nb:")
-                print(entrycount)
-                print("X:")
-                print(posx)
-                print("Y:")
-                print(posy)
-                print("Mod:")
-                print(modulo)
+                # print("")
+                # print("")
+                # print("Nb:")
+                # print(entrycount)
+                # print("X:")
+                # print(posx)
+                # print("Y:")
+                # print(posy)
+                # print("Mod:")
+                # print(modulo)
                 
                 for tester in range(1,10):
                     # calcul square
@@ -246,8 +246,10 @@ class Application(Frame):
                         possible_values[(entrycount-1)].append(tester)
                 
                 print(possible_values[(entrycount-1)])
-                if len(possible_values[(entrycount-1)]) == 1:
-                    self.entries["text{0}".format((entrycount-1))].set(possible_values[(entrycount-1)][0])
+                # if len(possible_values[(entrycount-1)]) == 1:
+                #     self.entries["text{0}".format(entrycount)].set(possible_values[(entrycount-1)][0])
+                #     possible_values[(entrycount-1)] = []
+                    # Reinit and retry to find solution
 
                 
                 # Increment
@@ -264,6 +266,51 @@ class Application(Frame):
                 offsety += 3
             else:
                 offsetx += 3
+
+        #Search for square solution
+        for square in range(0,9):
+            print("")
+            possible_values = self.iterate_square_solution(square, possible_values)
+
+
+    def iterate_square_solution(self, square, possible_values):
+        sq_min = (square * 9)
+        sq_max = (square * 9) + 9
+        square_values = possible_values[sq_min:sq_max]
+
+        print("Values:")
+        print(square_values)
+
+        for index1 in range(0,9):
+            square_others_values = []
+            # Single result -> Set value and retry
+            if len(square_values[index1]) == 1:
+                value = square_values[index1][0]
+                entrycount = sq_min + index1 + 1
+
+                for item in possible_values[sq_min:sq_max]:
+                    if value in item:
+                        item.remove(value)
+                
+                self.entries["text{0}".format(entrycount)].set(value)
+                return self.iterate_square_solution(square, possible_values)
+
+
+            for index2 in range(0,9):
+                if index1 == index2 or len(square_values[index2]) == 0:
+                    continue
+
+                square_others_values = square_others_values + square_values[index2]
+
+            square_others_values = set(square_others_values)
+
+            
+            square_unique_value = set(square_values[index1]) - square_others_values
+            print("Unique value:")
+            print(square_unique_value)
+
+        return possible_values
+
 
     def update_entry_value(self, event, text, posx, posy):
         # value
