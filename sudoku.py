@@ -747,7 +747,8 @@ class Application(Frame):
     def strategie_4_exclusive_pairs(self):
         print("")
         print("#### S4 - Exclusive pairs")
-        #Exclusive pairs
+        # Exclusive pairs
+        # Search in square
 
         for square in range(0,9):
             exclusive_pairs = {}
@@ -763,10 +764,32 @@ class Application(Frame):
                             continue
 
                         if exclusive_pairs[key1] == exclusive_pairs[key2]:
-                            print("\t\t ------------ Found ! ------------")
-                            print("\t\t case found.")
-                            print("\t\t\t ",exclusive_pairs[key1])
-                            print("\t\t\t ",exclusive_pairs[key2])
+                            cleaning_required = False
+
+                            # Search in this square if other case has those numbers -> If yes: clean and mvt + 1
+                            for value in exclusive_pairs[key1]:
+                                for index_to_clean in range(0,9):
+                                    if index_to_clean == key1 or index_to_clean == key2:
+                                        continue
+                                    if value in self.possible_values_square[square][index_to_clean]:
+                                        # Clean
+                                        self.possible_values_square[square][index_to_clean].remove(value)
+
+                                        case_to_clean = index_to_clean + 1 + (square * 9)
+                                        line_to_clean = int(((case_to_clean-(square*9))-1)/3) + 1 + (int(square/3) * 3)
+                                        col_to_clean = (((case_to_clean - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
+                                        
+                                        line_item = col - 1
+                                        col_item = line - 1
+                                        self.possible_values_line[line_to_clean][line_item].remove(value)
+                                        self.possible_values_col[col_to_clean][col_item].remove(value)
+                                        cleaning_required = True
+
+                            if cleaning_required:
+                                print("\t\t ------------ Found ! ------------")
+                                print("\t\t case found.", key1, key2)
+                                return True
+
 
         return False
 
