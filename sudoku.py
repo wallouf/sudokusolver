@@ -316,23 +316,101 @@ class Application(Frame):
             posx += (offsetsquarex * 3)
             posy += offsetsquarey
 
-            print("\t",case)
-            print("\t",posx)
-            print("\t",posy)
-            print("")
+            # print("\t",case)
+            # print("\t",posx)
+            # print("\t",posy)
+            # print("")
+            # mvt = self.iterate_hori_solution(case, posx, posy, possible_values, mvt)
+            
+        mvt = self.iterate_hori_solution(3, 3, 1, possible_values, mvt)
 
 
 
 
         return mvt
 
-    def iterate_hori_solution(self, posx, posy, possible_values, mvt):
+    def iterate_hori_solution(self, case, posx, posy, possible_values, mvt):
+        #retrieve values for the line
+        hori_values = []
+        hori_count = 0
+        hori_key = []
+
+        squareoffset = 0
+        yoffset = 0
+        
+        if case > 54:
+            squareoffset = 54
+        elif case > 27:
+            squareoffset = 27
+
+        if posy > 6:
+            yoffset = 6
+        elif posy > 3:
+            yoffset = 3
+        
+        xoffset = (posy - 1  - yoffset) * 3
+        
+        for index in range(1,4):
+            xindex = index + xoffset + squareoffset
+            hori_key.append((xindex - 1))
+            if xindex == case:
+                hori_count = case
+            print(xindex)
+            hori_values.append(possible_values[(xindex -1)])
+
+        for index in range(1,4):
+            xindex = index + xoffset + squareoffset + 9
+            hori_key.append((xindex - 1))
+            if xindex == case:
+                hori_count = case
+            print(xindex)
+            hori_values.append(possible_values[(xindex -1)])
+
+        for index in range(1,4):
+            xindex = index + xoffset + squareoffset + 18
+            hori_key.append((xindex - 1))
+            if xindex == case:
+                hori_count = case
+            print(xindex)
+            hori_values.append(possible_values[(xindex -1)])
+
+        #Check for solutions in the 9 cases of the line
+        for index in range(0,9):
+            values = hori_values[index]
+            case_readed = hori_key[index]
+            hori_others_values = []
+            
+            if len(values) == 1:
+                value = values[0]
+
+                for key in hori_key:
+                    if key in possible_values and value in possible_values[key]:
+                        possible_values[key].remove(value)
+                
+                self.entries["text{0}".format(hori_key[index])].set(value)
+                mvt += 1
+                return self.iterate_hori_solution(case, posx, posy, possible_values, mvt)
+
+            for index2 in range(0,9):
+                if index == index2 or len(hori_values[index2]) == 0:
+                    continue
+
+                hori_others_values = hori_others_values + hori_values[index2]
+
+            hori_others_values = set(hori_others_values)
+
+            
+            hori_unique_value = set(hori_values[index]) - hori_others_values
+            print("Unique line value:")
+            print(hori_unique_value)
+
+
         return mvt
 
 
 
 
-    def iterate_vert_solution(self, posx, posy, possible_values, mvt):
+    def iterate_vert_solution(self, case, posx, posy, possible_values, mvt):
         return mvt
 
     def iterate_square_solution(self, square, possible_values, mvt):
@@ -376,7 +454,7 @@ class Application(Frame):
 
             
             square_unique_value = set(square_values[index1]) - square_others_values
-            print("Unique value:")
+            print("Unique square value:")
             print(square_unique_value)
 
         return mvt
