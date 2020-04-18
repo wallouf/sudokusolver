@@ -23,8 +23,8 @@ pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/t
 # frame = cv2.imread("C:/Users/Wallouf/Desktop/python/test.png")
 
 ##############  Load OCR data for training #######################################
-samples = np.float32(np.loadtxt('feature_vector_pixels.data'))
-responses = np.float32(np.loadtxt('samples_pixels.data'))
+samples = np.float32(np.loadtxt('samples.data'))
+responses = np.float32(np.loadtxt('responses.data'))
 
 model = cv2.ml.KNearest_create()
 model.train(samples, cv2.ml.ROW_SAMPLE, responses)
@@ -81,7 +81,7 @@ warpg = cv2.cvtColor(warp, cv2.COLOR_BGR2GRAY)
 
 dict_values_readed = dict()
 
-for case in range(0,81):
+for case in range(1,82):
     dict_values_readed[case] = 0
 
 smooth = cv2.GaussianBlur(warpg ,(3,3), 3)
