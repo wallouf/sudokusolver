@@ -2,9 +2,33 @@
 import time
 
 current_milli_time = lambda: int(round(time.time() * 1000))
+possible_values_square={}
+possible_values_line={}
+possible_values_col={}
+
+key_line={}
+key_col={}
+
+entries_readed={}
+
+entries={}
+entries_hori=[]
+entries_vert=[]
 
 
-def generate_sudoku_solver(values_readed):                
+def solve_sudoku(values_readed):
+    global possible_values_square
+    global possible_values_line
+    global possible_values_col
+
+    global key_line
+    global key_col
+    global entries_readed
+
+    global entries
+    global entries_hori
+    global entries_vert
+    
     possible_values_square={}
     possible_values_line={}
     possible_values_col={}
@@ -12,7 +36,7 @@ def generate_sudoku_solver(values_readed):
     key_line={}
     key_col={}
 
-    entries_generated={}
+    entries_readed={}
 
     entries={}
     entries_hori=[]
@@ -22,22 +46,26 @@ def generate_sudoku_solver(values_readed):
         entries_hori.append({})
         entries_vert.append({})
     
-    create_sudoku_grid(values_readed, entries_generated, entries, entries_hori, entries_vert)
+    read_sudoku_grid(values_readed)
     
     begin = current_milli_time()
     get_all_possible_values()
-    loop_apply_strategies()
+    
+    values_readed = loop_apply_strategies(values_readed)
     end = current_milli_time()
 
     print("Duration : ", (end-begin))
+    return values_readed
 
-def create_sudoku_grid(values_readed, entries_generated, entries, entries_hori, entries_vert):
+def read_sudoku_grid(values_readed):
+    global entries
+    global entries_hori
+    global entries_vert
+    
     entrycount = 1
     offsetx = 0
     offsety = 0
 
-    # label = Label(text='Affichage')
-    # label.grid(column=0, row=10)
 
     for iti1 in range(1,10):
         
@@ -56,7 +84,7 @@ def create_sudoku_grid(values_readed, entries_generated, entries, entries_hori, 
 
             # Pre-load sudoku
             if entry != 0:
-                entries_generated[entrycount] = entry
+                entries_readed[entrycount] = entry
 
             entries[entrycount] = entry
             entries_hori[(posy-1)][posx] = entry
@@ -74,6 +102,9 @@ def create_sudoku_grid(values_readed, entries_generated, entries, entries_hori, 
             offsetx += 3
 
 def check_sudoku_rule(widgetvalue, posx, posy):
+    global entries
+    global entries_hori
+    global entries_vert
     # calcul square
     posx +=1
     square=1
@@ -107,7 +138,7 @@ def check_sudoku_rule(widgetvalue, posx, posy):
         if elem == iti1:
             continue
         actual_value = entries.get(iti1)
-        if actual_value.isdecimal():
+        if actual_value != 0:
             square_dict[actual_value] = ""
     
     # check for square
@@ -122,7 +153,7 @@ def check_sudoku_rule(widgetvalue, posx, posy):
         if (posx-1) == iti1:
             continue
         actual_value = h_lines_entries.get(iti1)
-        if actual_value.isdecimal():
+        if actual_value != 0:
             h_lines_dict[actual_value] = ""
     
     if widgetvalue in h_lines_dict:
@@ -136,7 +167,7 @@ def check_sudoku_rule(widgetvalue, posx, posy):
         if (posy-1) == iti1:
             continue
         actual_value = v_lines_entries.get(iti1)
-        if actual_value.isdecimal():
+        if actual_value != 0:
             v_lines_dict[actual_value] = ""
     
     if widgetvalue in v_lines_dict:
@@ -145,6 +176,12 @@ def check_sudoku_rule(widgetvalue, posx, posy):
     return True
 
 def get_all_possible_values():
+    global entries_readed
+
+    global entries
+    global entries_hori
+    global entries_vert
+
     entrycount = 1
     offsetx = 0
     offsety = 0
@@ -167,7 +204,7 @@ def get_all_possible_values():
             # Each 3 slot, return x to 0 and offset
             modulo=((posx+1) % 3)
             
-            if entrycount in entries_generated:
+            if entrycount in entries_readed:
                 # Increment
                 entrycount += 1
                 posx += 1
@@ -203,7 +240,7 @@ def get_all_possible_values():
                     if entrycount == iti3:
                         continue
                     actual_value = entries.get(iti3)
-                    if actual_value.isdecimal():
+                    if actual_value != 0:
                         square_dict.append(int(actual_value))
                 
                 # check for lines H
@@ -214,7 +251,7 @@ def get_all_possible_values():
                     if (posx) == iti4:
                         continue
                     actual_value = h_lines_entries.get(iti4)
-                    if actual_value.isdecimal():
+                    if actual_value != 0:
                         h_lines_dict.append(int(actual_value))
                 
                 # check for lines V
@@ -225,7 +262,7 @@ def get_all_possible_values():
                     if (posy) == iti5:
                         continue
                     actual_value = v_lines_entries.get(iti5)
-                    if actual_value.isdecimal():
+                    if actual_value != 0:
                         v_lines_dict.append(int(actual_value))
                 
                 if not ((tester in square_dict) or (tester in v_lines_dict) or (tester in h_lines_dict)):
@@ -262,12 +299,17 @@ def get_all_possible_values():
 
 
 def get_square_solution(possible_values, square):
+    global possible_values_square
+
     sq_min = (square * 9)
     sq_max = (square * 9) + 9
     
     possible_values_square[square] = possible_values[sq_min:sq_max]
 
 def get_line_solution(possible_values, line):
+    global possible_values_line
+    global key_line
+
     hori_values = []
     hori_key = []
 
@@ -305,6 +347,9 @@ def get_line_solution(possible_values, line):
     possible_values_line[line] = hori_values
 
 def get_col_solution(possible_values, col):
+    global possible_values_col
+    global key_col
+
     vert_values = []
     vert_key = []
     
@@ -340,6 +385,10 @@ def get_col_solution(possible_values, col):
     possible_values_col[col] = vert_values
 
 def update_possible_values_catalog(case, value):
+    global possible_values_square
+    global possible_values_line
+    global possible_values_col
+    
     print("Case: ", case)
     print("value to remove: ", value)
 
@@ -371,7 +420,9 @@ def update_possible_values_catalog(case, value):
         if value in possible_values_col[col][index]:
             possible_values_col[col][index].remove(value)
 
-def loop_apply_strategies():
+def loop_apply_strategies(values_readed):
+    global possible_values_square
+
     # Deduct solution
     full_count = 0
 
@@ -390,7 +441,7 @@ def loop_apply_strategies():
         print("")
         print("")
         # Loop
-        mvt = iterate_all_strategies()
+        mvt = iterate_all_strategies(values_readed)
         
         print("")
         print("\tMouvement: ", mvt)
@@ -412,12 +463,17 @@ def loop_apply_strategies():
     
     print("")
     print("Recheck solution:")
+    
     if recheck_all_results():
         print("Solution verified ! ")
+        return values_readed
     else:
         print("Error with the solution when re-checking ! ")
+        return None
 
 def recheck_all_results():
+    global entries
+
     entrycount = 1
     offsetx = 0
     offsety = 0
@@ -455,12 +511,12 @@ def recheck_all_results():
             
 
     
-def iterate_all_strategies():
+def iterate_all_strategies(values_readed):
     # S1 - Unique choice scan
-    if strategie_1_unique_choice():
+    if strategie_1_unique_choice(values_readed):
         return 1
     # S2 - Hidden unique choice for line or col or square
-    if strategie_2_hidden_unique_choice():
+    if strategie_2_hidden_unique_choice(values_readed):
         return 1
     # S3 - Exclusive number for square
     if strategie_3_exclusive_region():
@@ -475,7 +531,10 @@ def iterate_all_strategies():
     print("")
     return 0
 
-def strategie_1_unique_choice():
+def strategie_1_unique_choice(values_readed):
+    global possible_values_square
+    global entries
+
     print("")
     print("#### S1 - Unique choice")
     for square in range(0,9):
@@ -489,14 +548,20 @@ def strategie_1_unique_choice():
                 value = square_values[index1][0]
                 entrycount = sq_min + index1 + 1
                 
-                entries["text{0}".format(entrycount)].set(value)
+                values_readed[entrycount] = value
                 update_possible_values_catalog(entrycount, value)
                 print("\t\t ------------ Found ! ------------", entrycount)
                 return True
 
     return False
 
-def strategie_2_hidden_unique_choice():
+def strategie_2_hidden_unique_choice(values_readed):
+    global possible_values_square
+    global possible_values_line
+    global possible_values_col
+
+    global entries
+
     print("")
     print("#### S2 - Hidden unique choice")
     
@@ -526,7 +591,7 @@ def strategie_2_hidden_unique_choice():
 
                 value = square_unique_value.pop()
                 
-                entries["text{0}".format(entrycount)].set(value)
+                values_readed[entrycount] = value
                 update_possible_values_catalog(entrycount, value)
 
                 return True
@@ -559,7 +624,7 @@ def strategie_2_hidden_unique_choice():
 
                 value = hori_unique_value.pop()
                 
-                entries["text{0}".format(case_readed)].set(value)
+                values_readed[case_readed] = value
                 update_possible_values_catalog(case_readed, value)
 
                 return True
@@ -592,7 +657,7 @@ def strategie_2_hidden_unique_choice():
 
                 value = vert_unique_value.pop()
                 
-                entries["text{0}".format(case_readed)].set(value)
+                values_readed[case_readed] = value
                 update_possible_values_catalog(case_readed, value)
 
                 return True
@@ -600,6 +665,13 @@ def strategie_2_hidden_unique_choice():
     return False
 
 def strategie_3_exclusive_region():
+    global possible_values_square
+    global possible_values_line
+    global possible_values_col
+
+    global key_line
+    global key_col
+
     print("")
     print("#### S3 - Exclusive region")
 
@@ -711,6 +783,10 @@ def strategie_3_exclusive_region():
     return False
 
 def strategie_4_exclusive_pairs():
+    global possible_values_square
+    global possible_values_line
+    global possible_values_col
+    
     print("")
     print("#### S4 - Exclusive pairs")
     # Exclusive pairs
@@ -760,6 +836,10 @@ def strategie_4_exclusive_pairs():
     return False
 
 def strategie_5_exclusive_number_in_line_or_col():
+    global possible_values_square
+    global possible_values_line
+    global possible_values_col
+
     print("")
     print("#### S5 - Exclusive number in line / col")
 
@@ -901,6 +981,9 @@ def strategie_5_exclusive_number_in_line_or_col():
     return False
 
 def s5_clean_col_and_square(tested_value, line, xindex_to_clean):
+    global possible_values_square
+    global possible_values_col
+
     square_to_clean = int((xindex_to_clean - 1) / 9)
     col_to_clean = (((xindex_to_clean - 1) - (square_to_clean * 9)) % 3) + 1 + ((square_to_clean % 3) * 3)
     
@@ -914,6 +997,9 @@ def s5_clean_col_and_square(tested_value, line, xindex_to_clean):
         possible_values_square[square_to_clean][square_item_to_clean].remove(tested_value)
 
 def s5_clean_line_and_square(tested_value, col, xindex_to_clean):
+    global possible_values_square
+    global possible_values_line
+
     square_to_clean = int((xindex_to_clean - 1) / 9)
     line_to_clean = int(((xindex_to_clean-(square_to_clean*9))-1)/3) + 1 + (int(square_to_clean/3) * 3)
     
@@ -928,6 +1014,10 @@ def s5_clean_line_and_square(tested_value, col, xindex_to_clean):
 
 
 def clean_line_possible_values_for_ce_technique(square, absolute_line, value_to_check):
+    global possible_values_square
+    global possible_values_line
+    global possible_values_col
+
     deleted = 0
     # Clean the case of the square that are not in this line of this value
     for ite in range(0,9):
@@ -954,6 +1044,10 @@ def clean_line_possible_values_for_ce_technique(square, absolute_line, value_to_
     return deleted
 
 def clean_col_possible_values_for_ce_technique(square, absolute_col, value_to_check):
+    global possible_values_square
+    global possible_values_line
+    global possible_values_col
+
     deleted = 0
     # Clean the case of the square that are not in this line of this value
     for ite in range(0,9):
