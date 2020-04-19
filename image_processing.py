@@ -7,6 +7,14 @@ import time,sys
 
 import sudoku
 
+try:
+    from PIL import Image
+except ImportError:
+    import Image
+import pytesseract
+
+pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract'
+
 samples = np.float32(np.loadtxt('samples.data'))
 responses = np.float32(np.loadtxt('responses.data'))
 
@@ -51,8 +59,6 @@ def search_square_from_image(img):
 
     thresh = cv2.adaptiveThreshold(gray, 255, 1, 1, 11, 2)
 
-    image_area = gray.size
-
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     biggest = None
@@ -60,14 +66,11 @@ def search_square_from_image(img):
 
     for i in contours:
         area = cv2.contourArea(i)
-        
-        # if area > (image_area/2):
-        if 1 == 1:
-            peri = cv2.arcLength(i, True)
-            approx = cv2.approxPolyDP(i,0.02*peri, True)
-            if area > max_area and len(approx)==4:
-                biggest = approx
-                max_area = area
+        peri = cv2.arcLength(i, True)
+        approx = cv2.approxPolyDP(i,0.02*peri, True)
+        if area > max_area and len(approx)==4:
+            biggest = approx
+            max_area = area
 
     h = np.array([ [0,0],[449,0],[449,449],[0,449] ], np.float32)
 
@@ -86,6 +89,7 @@ def retrieve_number_from_square(image):
     
     warpg = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+
     dict_values_readed = dict()
 
     for case in range(1,82):
@@ -97,24 +101,35 @@ def retrieve_number_from_square(image):
     erode = cv2.erode(thresh, kernel, iterations = 1)
     dilate = cv2.dilate(erode, kernel, iterations = 1)
 
-
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
 
     for cnt in contours:
         area = cv2.contourArea(cnt)
-        
         (bx,by,bw,bh) = cv2.boundingRect(cnt)
-        
-        # if 1 == 1:
-        if (100<bw*bh<1200) and (10<bw<40) and (25<bh<45):
-            roi = dilate[by:by+bh,bx:bx+bw]
-            
-            small_roi = cv2.resize(roi,(10,10))
-            feature = small_roi.reshape((1,100)).astype(np.float32)
 
+        if (100<bw*bh<1800) and (5<bw<40) and (20<bh<45):
+            roi = thresh[by-5:by+bh+5,bx-5:bx+bw+5]
+            # Try to search numbers with tesseract
+            integer_tesseract = pytesseract.image_to_string(roi, config='--psm 7 -c tessedit_char_whitelist=123456789')
+            try:
+                integer_tesseract = int(integer_tesseract)
+            except Exception as e:
+                integer_tesseract = None
+            # Try to search number with OPENCV KNEAREST
+            roi = dilate[by:by+bh,bx:bx+bw]
+            small_roi = cv2.resize(roi,(10,10))
+
+            feature = small_roi.reshape((1,100)).astype(np.float32)
             ret,results,neigh,dist = model.findNearest(feature,k=1)
-            integer = int(results.ravel()[0])
+            integer = results.ravel()[0]
+
+            try:
+                integer = int(integer)
+            except Exception as e:
+                continue
+            # Compare results
+            if integer_tesseract is not None and integer_tesseract != integer:
+                integer = integer_tesseract
             
             gridx = int((bx+bw/2) / 50)
             gridy = int((by+bh/2) / 50)
@@ -170,22 +185,15 @@ def print_results(image, dict_values_readed, dict_values_solved):
                 line = int(((case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
                 col = (((case - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
 
-                print("")
-                print("Case: ", case)
-                print("Square: ", square)
-                print("Line: ", line)
-                print("Col: ", col)
-                print("Value: ", dict_values_solved[case])
-
                 posx = (col-1) * 50 + 14
                 posy = (line-1) * 50 + 35
 
-                cv2.putText(image, str(dict_values_solved[case]), (posx,posy), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 3, cv2.LINE_AA, False)
+                cv2.putText(image, str(dict_values_solved[case]), (posx,posy), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 3, cv2.LINE_AA, False)
                 
     return image
 
 
-original_img = open_original_image('C:/Users/Wallouf/Desktop/python/test3.jpg')
+original_img = open_original_image('C:/Users/Wallouf/Desktop/python/test5.jpg')
 processed_img = original_img
 
 image_square_found = search_square_from_image(original_img)
@@ -196,8 +204,10 @@ if image_square_found is not None:
     processed_img = image_square_found
     dict_values_readed = retrieve_number_from_square(image_square_found)
 
+print(dict_values_readed)
 if dict_values_readed is not None:
     processed_img = print_results(processed_img, dict_values_readed, solve_sudoku(dict_values_readed))
+    # processed_img = print_results(processed_img, dict_values_readed, dict_values_readed)
 else:
     processed_img = print_results(processed_img, None, None)
 
