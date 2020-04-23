@@ -1,8 +1,9 @@
-/*global WildRydes _config AmazonCognitoIdentity AWSCognito*/
+/*global SudokuSolver _config AmazonCognitoIdentity AWSCognito*/
 
-var WildRydes = window.WildRydes || {};
+var SudokuSolver = window.SudokuSolver || {};
 
-(function scopeWrapper($) {
+(function authScopeWrapper($) {
+
     var signinUrl = 'login.html';
 
     var poolData = {
@@ -24,11 +25,11 @@ var WildRydes = window.WildRydes || {};
         AWSCognito.config.region = _config.cognito.region;
     }
 
-    WildRydes.signOut = function signOut() {
+    SudokuSolver.signOut = function signOut() {
         userPool.getCurrentUser().signOut();
     };
 
-    WildRydes.authToken = new Promise(function fetchCurrentAuthToken(resolve, reject) {
+    SudokuSolver.authToken = new Promise(function fetchCurrentAuthToken(resolve, reject) {
         var cognitoUser = userPool.getCurrentUser();
 
         if (cognitoUser) {
@@ -69,12 +70,7 @@ var WildRydes = window.WildRydes || {};
                 delete userAttributes.email_verified;
 
                 // Get the new password
-                var newPassword = "";
-
-                do {
-                  newPassword = prompt("Enter your new password with at least 8 characters, 1 uppercase, 1 lowercase, 1 number and 1 special character:");
-                  newPassword = newPassword.trim();
-                } while (newPassword == undefined || newPassword == "");
+                var newPassword = prompt("Enter your new password with at least 8 characters, 1 uppercase, 1 lowercase, 1 number and 1 special character:");
 
                 cognitoUser.completeNewPasswordChallenge(newPassword, userAttributes, this);
             }
@@ -87,19 +83,54 @@ var WildRydes = window.WildRydes || {};
 
     $(function onDocReady() {
         $('#signinForm').submit(handleSignin);
+        // Logout user if already signed in
+        try {
+            SudokuSolver.signOut();
+        } catch(error) {
+          console.log(error);
+        }
+
+
     });
 
+    function enableOrDisableLoginButton(enable){
+        if (enable){
+            $('#sudokuLoginBtn').prop('disabled', false);
+            $('#sudokuLoginBtn').text("Login")
+        }else{
+            $('#sudokuLoginBtn').text("Loading ...")
+            $('#sudokuLoginBtn').prop('disabled', true);
+        }
+    }
+
+    function displayAlert(message){
+        if (message == undefined) {
+            $("#loginAlerts").text("").addClass("d-none");
+        }else{
+            $("#loginAlerts").text(message).removeClass("d-none");
+        }
+    }
+
     function handleSignin(event) {
+        displayAlert();
+        enableOrDisableLoginButton(false);
         var email = $('#emailInputSignin').val();
         var password = $('#passwordInputSignin').val();
         event.preventDefault();
         signin(email, password,
             function signinSuccess() {
+                enableOrDisableLoginButton(true);
                 console.log('Successfully Logged In');
                 window.location.href = 'index.html';
             },
             function signinError(err) {
-                alert(err);
+                enableOrDisableLoginButton(true);
+                var messagePosition = err.toString().indexOf(": ");
+                if (messagePosition > 0){
+                    displayAlert(err.toString().substring(messagePosition + 1));
+                }else{
+                    displayAlert(err);
+                }
             }
         );
     }
