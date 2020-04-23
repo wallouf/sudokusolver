@@ -3,7 +3,7 @@
 
 import cv2
 import numpy as np
-import time,sys
+import time, sys, base64
 
 import sudoku
 
@@ -13,7 +13,7 @@ except ImportError:
     import Image
 import pytesseract
 
-pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract'
+# pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract'
 
 samples = np.float32(np.loadtxt('samples.data'))
 responses = np.float32(np.loadtxt('responses.data'))
@@ -21,6 +21,11 @@ responses = np.float32(np.loadtxt('responses.data'))
 model = cv2.ml.KNearest_create()
 model.train(samples, cv2.ml.ROW_SAMPLE, responses)
 
+def data_uri_to_cv2_img(uri):
+    encoded_data = uri.split(',')[1]
+    nparr = np.fromstring(encoded_data.decode('base64'), np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    return img
 
 def rectify(h):
         h = h.reshape((4,2))
@@ -36,8 +41,8 @@ def rectify(h):
   
         return hnew
 
-def open_original_image(image_path):
-    original_img =  cv2.imread(image_path)
+def check_image_size(original_img):
+    # original_img =  cv2.imread(image_path)
 
     img = original_img
 
@@ -193,26 +198,28 @@ def print_results(image, dict_values_readed, dict_values_solved):
     return image
 
 
-original_img = open_original_image('C:/Users/Wallouf/Desktop/python/test5.jpg')
-processed_img = original_img
+def launch_image_processing(data_uri):
+    original_img = data_uri_to_cv2_img(data_uri)
+    
+    original_img = check_image_size(original_img)
+    processed_img = original_img
 
-image_square_found = search_square_from_image(original_img)
+    image_square_found = search_square_from_image(original_img)
 
-dict_values_readed = None
+    dict_values_readed = None
 
-if image_square_found is not None:
-    processed_img = image_square_found
-    dict_values_readed = retrieve_number_from_square(image_square_found)
+    if image_square_found is not None:
+        processed_img = image_square_found
+        dict_values_readed = retrieve_number_from_square(image_square_found)
 
-print(dict_values_readed)
-if dict_values_readed is not None:
-    processed_img = print_results(processed_img, dict_values_readed, solve_sudoku(dict_values_readed))
-    # processed_img = print_results(processed_img, dict_values_readed, dict_values_readed)
-else:
-    processed_img = print_results(processed_img, None, None)
+    print(dict_values_readed)
+    if dict_values_readed is not None:
+        processed_img = print_results(processed_img, dict_values_readed, solve_sudoku(dict_values_readed))
+        # processed_img = print_results(processed_img, dict_values_readed, dict_values_readed)
+    else:
+        processed_img = print_results(processed_img, None, None)
 
+    # Re-encode to base64
+    processed_img = base64.b64encode(cv2.imencode('.jpg', processed_img)[1]).decode()
 
-cv2.imshow('img', processed_img)
-
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    return processed_img
