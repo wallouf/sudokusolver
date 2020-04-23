@@ -3,9 +3,6 @@
 var SudokuSolver = window.SudokuSolver || {};
 
 (function authScopeWrapper($) {
-
-    var signinUrl = 'login.html';
-
     var poolData = {
         UserPoolId: _config.cognito.userPoolId,
         ClientId: _config.cognito.userPoolClientId
@@ -85,7 +82,9 @@ var SudokuSolver = window.SudokuSolver || {};
         $('#signinForm').submit(handleSignin);
         // Logout user if already signed in
         try {
-            SudokuSolver.signOut();
+            if('login.html' == window.location.pathname){
+                SudokuSolver.signOut();
+            }
         } catch(error) {
           console.log(error);
         }

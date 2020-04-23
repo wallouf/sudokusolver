@@ -3,6 +3,8 @@
 var SudokuSolver = window.SudokuSolver || {};
 SudokuSolver.map = SudokuSolver.map || {};
 
+var payloadToken = {};
+
 (function homeScopeWrapper($) {
     var authToken;
     SudokuSolver.authToken.then(function setAuthToken(token) {
@@ -16,27 +18,45 @@ SudokuSolver.map = SudokuSolver.map || {};
         window.location.href = 'login.html';
     });
     
+    function resetSolution() {
+        $("#sudokuResult").addClass("d-none");
+        $("#sudokuUploader").removeClass("d-none");
+    }
+    
     function requestSolution(picture) {
-        $.ajax({
-            method: 'POST',
-            url: _config.api.invokeUrl + '/ride',
-            headers: {
-                Authorization: authToken
-            },
-            data: picture,
-            contentType: 'application/json',
-            success: completeRequest,
-            error: function ajaxError(jqXHR, textStatus, errorThrown) {
-                console.error('Error requesting ride: ', textStatus, ', Details: ', errorThrown);
-                console.error('Response: ', jqXHR.responseText);
-                alert('An error occured when requesting your unicorn:\n' + jqXHR.responseText);
-            }
-        });
+
+        $("#sudokuUploader").addClass("d-none");
+        $("#sudokuResult").removeClass("d-none");
+        // $.ajax({
+        //     method: 'POST',
+        //     url: _config.api.invokeUrl + '/ride',
+        //     headers: {
+        //         Authorization: authToken
+        //     },
+        //     data: picture,
+        //     contentType: 'application/json',
+        //     success: completeRequest,
+        //     error: function ajaxError(jqXHR, textStatus, errorThrown) {
+        //         console.error('Error requesting ride: ', textStatus, ', Details: ', errorThrown);
+        //         console.error('Response: ', jqXHR.responseText);
+        //         alert('An error occured when requesting your unicorn:\n' + jqXHR.responseText);
+        //     }
+        // });
     }
 
     function completeRequest(result) {
 
     }
+
+    function parseJwt (token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        return JSON.parse(jsonPayload);
+    };
 
     // Register click handler for #request button
     $(function onDocReady() {
@@ -44,23 +64,24 @@ SudokuSolver.map = SudokuSolver.map || {};
         $('#sudokuPictureBtn').click(function() {
             requestSolution("");
         });
-        
-        $('#signOut').click(function() {
+
+        $('#sudokuResetBtn').click(function() {
+            resetSolution("");
+        });
+
+        $('#logoutBtn').click(function() {
             SudokuSolver.signOut();
             
-            alert("You have been signed out.");
             window.location = "login.html";
         });
 
         SudokuSolver.authToken.then(function updateAuthMessage(token) {
             if (token) {
-                console.log(token);
+                payloadToken = parseJwt(token);
+                $("#userEmailInfo").text(payloadToken['cognito:username']);
             }
         });
 
-        // if (!_config.api.invokeUrl) {
-        //     $('#noApiMessage').show();
-        // }
     });
 
 }(jQuery));
