@@ -25,8 +25,23 @@ var payloadToken = {};
     
     function requestSolution(picture) {
 
-        $("#sudokuUploader").addClass("d-none");
-        $("#sudokuResult").removeClass("d-none");
+        var input = document.getElementById('sudokuPicture');
+        if (!input) {
+            alert("Couldn't find the fileinput element.");
+        } else if (!input.files) {
+            alert("This browser doesn't seem to support the `files` property of file inputs.");
+        } else if (!input.files[0]) {
+            alert("Please select a file before clicking 'Load'");               
+        } else {
+            var file = input.files[0];
+
+            resizeAndUploadFile(file);
+        }
+
+        // $("#sudokuUploader").addClass("d-none");
+        // $("#sudokuResult").removeClass("d-none");
+
+
         // $.ajax({
         //     method: 'POST',
         //     url: _config.api.invokeUrl + '/ride',
@@ -77,6 +92,7 @@ var payloadToken = {};
 
         SudokuSolver.authToken.then(function updateAuthMessage(token) {
             if (token) {
+                console.log(token);
                 payloadToken = parseJwt(token);
                 $("#userEmailInfo").text(payloadToken['cognito:username']);
             }
