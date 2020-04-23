@@ -102,7 +102,7 @@ var SudokuSolver = window.SudokuSolver || {};
         }
     }
 
-    function displayAlert(message){
+    function displayLoginAlert(message){
         if (message == undefined) {
             $("#loginAlerts").text("").addClass("d-none");
         }else{
@@ -111,7 +111,7 @@ var SudokuSolver = window.SudokuSolver || {};
     }
 
     function handleSignin(event) {
-        displayAlert();
+        displayLoginAlert();
         enableOrDisableLoginButton(false);
         var email = $('#emailInputSignin').val();
         var password = $('#passwordInputSignin').val();
@@ -126,9 +126,9 @@ var SudokuSolver = window.SudokuSolver || {};
                 enableOrDisableLoginButton(true);
                 var messagePosition = err.toString().indexOf(": ");
                 if (messagePosition > 0){
-                    displayAlert(err.toString().substring(messagePosition + 1));
+                    displayLoginAlert(err.toString().substring(messagePosition + 1));
                 }else{
-                    displayAlert(err);
+                    displayLoginAlert(err);
                 }
             }
         );

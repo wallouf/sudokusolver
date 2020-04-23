@@ -19,33 +19,29 @@ var payloadToken = {};
     });
     
     function resetSolution() {
+        $("#sudokuPicture").val('');
+        enableOrDisableUploadButton(true);
         $("#sudokuResult").addClass("d-none");
         $("#sudokuUploader").removeClass("d-none");
     }
 
-    function dataURLToBlob(dataURL) {
-        var BASE64_MARKER = ';base64,';
-        if (dataURL.indexOf(BASE64_MARKER) == -1) {
-          var parts = dataURL.split(',');
-          var contentType = parts[0].split(':')[1];
-          var raw = parts[1];
-
-          return new Blob([raw], {type: contentType});
+    function displayUploadAlert(message){
+        if (message == undefined) {
+            $("#uploadAlerts").text("").addClass("d-none");
+        }else{
+            $("#uploadAlerts").text(message).removeClass("d-none");
         }
+    }
 
-        var parts = dataURL.split(BASE64_MARKER);
-        var contentType = parts[0].split(':')[1];
-        var raw = window.atob(parts[1]);
-        var rawLength = raw.length;
-
-        var uInt8Array = new Uint8Array(rawLength);
-
-        for (var i = 0; i < rawLength; ++i) {
-          uInt8Array[i] = raw.charCodeAt(i);
+    function enableOrDisableUploadButton(enable){
+        if (enable){
+            $('#sudokuPictureBtn').prop('disabled', false);
+            $('#sudokuPictureBtn').text("Upload")
+        }else{
+            $('#sudokuPictureBtn').text("Loading ...")
+            $('#sudokuPictureBtn').prop('disabled', true);
         }
-
-        return new Blob([uInt8Array], {type: contentType});
-    };
+    }
 
     function resizeAndUploadFile(current_file){
       // var current_file = files[0];
@@ -106,28 +102,31 @@ var payloadToken = {};
             error: function ajaxError(jqXHR, textStatus, errorThrown) {
                 console.error('Error requesting ride: ', textStatus, ', Details: ', errorThrown);
                 console.error('Response: ', jqXHR.responseText);
-                alert('An error occured:\n' + jqXHR.responseText);
+                displayUploadAlert('An error occured:\n' + jqXHR.responseText);
+                enableOrDisableUploadButton(true);
             }
         })
     };
     
     function requestSolution(picture) {
-
+        displayUploadAlert();
         var input = document.getElementById('sudokuPicture');
         if (!input) {
-            alert("Couldn't find the fileinput element.");
+            displayUploadAlert("Couldn't find the fileinput element.");
         } else if (!input.files) {
-            alert("This browser doesn't seem to support the `files` property of file inputs.");
+            displayUploadAlert("This browser doesn't seem to support the `files` property of file inputs.");
         } else if (!input.files[0]) {
-            alert("Please select a file before clicking 'Load'");               
+            displayUploadAlert("Please select a file before clicking 'Load'");               
         } else {
             var file = input.files[0];
+            enableOrDisableUploadButton(false);
 
             resizeAndUploadFile(file);
         }
     }
 
     function completeRequest(result) {
+        enableOrDisableUploadButton(true);
         $("#sudokuResultImage").attr('src',result);
         $("#sudokuUploader").addClass("d-none");
         $("#sudokuResult").removeClass("d-none");
