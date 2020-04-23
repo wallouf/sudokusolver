@@ -84,7 +84,7 @@ var payloadToken = {};
               ctx.drawImage(this, 0, 0, imageWidth, imageHeight);
 
               // Convert the resize image to a new file to post it.
-              uploadFile(dataURLToBlob(canvas.toDataURL(current_file.type)));
+              uploadFile(canvas.toDataURL(current_file.type));
             }
         }
         reader.readAsDataURL(current_file);
@@ -92,21 +92,23 @@ var payloadToken = {};
     }
 
     function uploadFile(file) {
-        var formData = new FormData();
-        formData.append('myfile', file);
 
         $.ajax({
             type: 'POST',
-            url: 'https://f8hs96phw6.execute-api.eu-west-3.amazonaws.com/stage/solve',
-            data: formData,
+            url: 'https://ij6seywf7a.execute-api.eu-west-3.amazonaws.com/prod/solve',
+            data: file,
             headers: {
                 Authorization: authToken
             },
             processData: false,
-            contentType: false
-        }).done(function(data) {
-               console.log(data);
-        });
+            contentType: false,
+            success: completeRequest,
+            error: function ajaxError(jqXHR, textStatus, errorThrown) {
+                console.error('Error requesting ride: ', textStatus, ', Details: ', errorThrown);
+                console.error('Response: ', jqXHR.responseText);
+                alert('An error occured:\n' + jqXHR.responseText);
+            }
+        })
     };
     
     function requestSolution(picture) {
@@ -123,30 +125,12 @@ var payloadToken = {};
 
             resizeAndUploadFile(file);
         }
-
-        // $("#sudokuUploader").addClass("d-none");
-        // $("#sudokuResult").removeClass("d-none");
-
-
-        // $.ajax({
-        //     method: 'POST',
-        //     url: _config.api.invokeUrl + '/ride',
-        //     headers: {
-        //         Authorization: authToken
-        //     },
-        //     data: picture,
-        //     contentType: 'application/json',
-        //     success: completeRequest,
-        //     error: function ajaxError(jqXHR, textStatus, errorThrown) {
-        //         console.error('Error requesting ride: ', textStatus, ', Details: ', errorThrown);
-        //         console.error('Response: ', jqXHR.responseText);
-        //         alert('An error occured when requesting your unicorn:\n' + jqXHR.responseText);
-        //     }
-        // });
     }
 
     function completeRequest(result) {
-
+        $("#sudokuResultImage").attr('src',result);
+        $("#sudokuUploader").addClass("d-none");
+        $("#sudokuResult").removeClass("d-none");
     }
 
     function parseJwt (token) {
@@ -178,7 +162,6 @@ var payloadToken = {};
 
         SudokuSolver.authToken.then(function updateAuthMessage(token) {
             if (token) {
-                console.log(token);
                 payloadToken = parseJwt(token);
                 $("#userEmailInfo").text(payloadToken['cognito:username']);
             }
