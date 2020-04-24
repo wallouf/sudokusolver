@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# python -m pip install pytesseract
 
 import cv2
 import numpy as np
@@ -13,19 +12,17 @@ except ImportError:
     import Image
 import pytesseract
 
-# pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract'
 
-samples = np.float32(np.loadtxt('samples.data'))
-responses = np.float32(np.loadtxt('responses.data'))
+def to_base64(img):
+    _, buf = cv2.imencode(".jpg", img)
+    return "data:image/jpeg;base64," + str(base64.b64encode(buf), 'utf-8')
 
-model = cv2.ml.KNearest_create()
-model.train(samples, cv2.ml.ROW_SAMPLE, responses)
 
-def data_uri_to_cv2_img(uri):
-    encoded_data = uri.split(',')[1]
-    nparr = np.fromstring(encoded_data.decode('base64'), np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    return img
+def from_base64(buf):
+    decoded_data = base64.b64decode(buf.split(',')[1])
+    np_data = np.frombuffer(decoded_data,np.uint8)
+    
+    return cv2.imdecode(np_data,cv2.IMREAD_UNCHANGED)
 
 def rectify(h):
         h = h.reshape((4,2))
@@ -42,8 +39,6 @@ def rectify(h):
         return hnew
 
 def check_image_size(original_img):
-    # original_img =  cv2.imread(image_path)
-
     img = original_img
 
     # Check size
@@ -90,7 +85,11 @@ def search_square_from_image(img):
 
 
 def retrieve_number_from_square(image):
-    global model
+    samples = np.float32(np.loadtxt('samples.data'))
+    responses = np.float32(np.loadtxt('responses.data'))
+
+    model = cv2.ml.KNearest_create()
+    model.train(samples, cv2.ml.ROW_SAMPLE, responses)
     
     warpg = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -120,6 +119,7 @@ def retrieve_number_from_square(image):
                 integer_tesseract = int(integer_tesseract)
             except Exception as e:
                 integer_tesseract = None
+            
             # Try to search number with OPENCV KNEAREST
             roi = dilate[by:by+bh,bx:bx+bw]
             small_roi = cv2.resize(roi,(10,10))
@@ -199,7 +199,8 @@ def print_results(image, dict_values_readed, dict_values_solved):
 
 
 def launch_image_processing(data_uri):
-    original_img = data_uri_to_cv2_img(data_uri)
+    
+    original_img = from_base64(data_uri)
     
     original_img = check_image_size(original_img)
     processed_img = original_img
@@ -220,6 +221,6 @@ def launch_image_processing(data_uri):
         processed_img = print_results(processed_img, None, None)
 
     # Re-encode to base64
-    processed_img = base64.b64encode(cv2.imencode('.jpg', processed_img)[1]).decode()
+    processed_img = to_base64(processed_img)
 
     return processed_img

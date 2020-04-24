@@ -197,8 +197,6 @@ def get_all_possible_values():
         
         posx = offsetx
         posy = offsety
-        print("")
-        print("")
         
         for iti2 in range(0,9):
             # Each 3 slot, return x to 0 and offset
@@ -267,8 +265,6 @@ def get_all_possible_values():
                 
                 if not ((tester in square_dict) or (tester in v_lines_dict) or (tester in h_lines_dict)):
                     possible_values[(entrycount-1)].append(tester)
-            
-            print(possible_values[(entrycount-1)])
             
             # Increment
             entrycount += 1
@@ -389,9 +385,6 @@ def update_possible_values_catalog(case, value):
     global possible_values_line
     global possible_values_col
     
-    print("Case: ", case)
-    print("value to remove: ", value)
-
     # Update square
     square = int((case - 1) / 9)
     line = int(((case-(square*9))-1)/3) + 1 + (int(square/3) * 3)
@@ -430,16 +423,9 @@ def loop_apply_strategies(values_readed):
 
     while True:
         remaining_size = 0
-        print("")
-        print("")
-        print("Values:")
         for square in range(0,9):
             for values in range(len(possible_values_square[square])):
                 remaining_size += len(possible_values_square[square][values])
-                print("\t ",possible_values_square[square][values])
-            print("")
-        print("")
-        print("")
         # Loop
         mvt = iterate_all_strategies(values_readed)
         
@@ -528,15 +514,12 @@ def iterate_all_strategies(values_readed):
     if strategie_5_exclusive_number_in_line_or_col():
         return 1
 
-    print("")
     return 0
 
 def strategie_1_unique_choice(values_readed):
     global possible_values_square
     global entries
 
-    print("")
-    print("#### S1 - Unique choice")
     for square in range(0,9):
         square_values = possible_values_square[square]
         sq_min = (square * 9)
@@ -550,7 +533,6 @@ def strategie_1_unique_choice(values_readed):
                 
                 values_readed[entrycount] = value
                 update_possible_values_catalog(entrycount, value)
-                print("\t\t ------------ Found ! ------------", entrycount)
                 return True
 
     return False
@@ -561,12 +543,6 @@ def strategie_2_hidden_unique_choice(values_readed):
     global possible_values_col
 
     global entries
-
-    print("")
-    print("#### S2 - Hidden unique choice")
-    
-    print("")
-    print("\t Square part...")
 
     for square in range(0,9):
         square_values = possible_values_square[square]
@@ -586,8 +562,6 @@ def strategie_2_hidden_unique_choice(values_readed):
             
             if len(square_unique_value) > 0:
                 entrycount = sq_min + index1 + 1
-                print("\t\t ------------ Found ! ------------")
-                print("\t\t Unique square value: ", entrycount, square_unique_value)
 
                 value = square_unique_value.pop()
                 
@@ -595,8 +569,6 @@ def strategie_2_hidden_unique_choice(values_readed):
                 update_possible_values_catalog(entrycount, value)
 
                 return True
-    print("")
-    print("\t Line part...")
 
     for line in range(1,10):
         #retrieve values for the line
@@ -619,8 +591,6 @@ def strategie_2_hidden_unique_choice(values_readed):
             hori_unique_value = set(hori_values[index]) - hori_others_values
             
             if len(hori_unique_value) > 0:
-                print("\t\t ------------ Found ! ------------")
-                print("\t\t Unique line value: ", case_readed, hori_unique_value)
 
                 value = hori_unique_value.pop()
                 
@@ -628,9 +598,6 @@ def strategie_2_hidden_unique_choice(values_readed):
                 update_possible_values_catalog(case_readed, value)
 
                 return True
-
-    print("")
-    print("\t Col part...")
 
     for col in range(1,10):
         #retrieve values for the line
@@ -652,8 +619,6 @@ def strategie_2_hidden_unique_choice(values_readed):
             vert_unique_value = set(vert_values[index]) - vert_others_values
             
             if len(vert_unique_value) > 0:
-                print("\t\t ------------ Found ! ------------")
-                print("\t\t Unique col value: ", case_readed, vert_unique_value)
 
                 value = vert_unique_value.pop()
                 
@@ -672,8 +637,6 @@ def strategie_3_exclusive_region():
     global key_line
     global key_col
 
-    print("")
-    print("#### S3 - Exclusive region")
 
     for square in range(0,9):
         sq_min = (square * 9)
@@ -732,12 +695,7 @@ def strategie_3_exclusive_region():
                 
                 # If found in another square
                 if not line_found:
-                    print("\t\t [S3] Values only possible in this square. LINE")
                     if clean_line_possible_values_for_ce_technique(square, absolute_line, value_to_check) > 0:
-                        print("\t\t ------------ Found ! ------------")
-                        print("\t\t Square: ", square)
-                        print("\t\t Case: ", absolute_case)
-                        print("\t\t Value: ", value_to_check)
                         return True
 
                 for col_index in range(len(possible_values_col[absolute_col])):
@@ -772,12 +730,7 @@ def strategie_3_exclusive_region():
                 
                 # If found in another square
                 if not col_found:
-                    print("\t\t [S3] Values only possible in this square. COL")
                     if clean_col_possible_values_for_ce_technique(square, absolute_col, value_to_check) > 0:
-                        print("\t\t ------------ Found ! ------------")
-                        print("\t\t Square: ", square)
-                        print("\t\t Case: ", absolute_case)
-                        print("\t\t Value: ", value_to_check)
                         return True
 
     return False
@@ -787,8 +740,6 @@ def strategie_4_exclusive_pairs():
     global possible_values_line
     global possible_values_col
     
-    print("")
-    print("#### S4 - Exclusive pairs")
     # Exclusive pairs
     # Search in square
 
@@ -799,7 +750,6 @@ def strategie_4_exclusive_pairs():
                 exclusive_pairs[index1] = possible_values_square[square][index1]
         
         if len(exclusive_pairs) > 0:
-            print("\t\t EXCLUSIVE PAIRS TO CHECK. square: ", square)
             for key1 in exclusive_pairs.keys():
                 for key2 in exclusive_pairs.keys():
                     if key2 == key1:
@@ -821,15 +771,13 @@ def strategie_4_exclusive_pairs():
                                     line_to_clean = int(((case_to_clean-(square*9))-1)/3) + 1 + (int(square/3) * 3)
                                     col_to_clean = (((case_to_clean - 1) - (square * 9)) % 3) + 1 + ((square % 3) * 3)
                                     
-                                    line_item = col - 1
-                                    col_item = line - 1
+                                    line_item = col_to_clean - 1
+                                    col_item = line_to_clean - 1
                                     possible_values_line[line_to_clean][line_item].remove(value)
                                     possible_values_col[col_to_clean][col_item].remove(value)
                                     cleaning_required = True
 
                         if cleaning_required:
-                            print("\t\t ------------ Found ! ------------")
-                            print("\t\t case found.", key1, key2)
                             return True
 
 
@@ -840,8 +788,6 @@ def strategie_5_exclusive_number_in_line_or_col():
     global possible_values_line
     global possible_values_col
 
-    print("")
-    print("#### S5 - Exclusive number in line / col")
 
     for square in range(0,9):
         for index1 in range(0,9):
@@ -892,10 +838,7 @@ def strategie_5_exclusive_number_in_line_or_col():
 
                 #Not found or not in the same line or col
                 if not found_line_aligned and not found_col_aligned:
-                    print("\t\t\t Not aligned")
                     continue
-                else:
-                    print("\t\t\t Aligned. Line / Col", found_line_aligned, found_col_aligned)
 
                 cleaning_required = False
                 
@@ -907,9 +850,6 @@ def strategie_5_exclusive_number_in_line_or_col():
                         if tested_value in possible_values_line[item1_line][line_index]:
                             cleaning_required = True
                             possible_values_line[item1_line][line_index].remove(tested_value)
-                            print("\t\t ------------ Found LINE ! ------------")
-                            print("\t\t Choice to remove:")
-                            print("\t\t Value", tested_value)
 
                             # lelelele
                             squareoffset = 0
@@ -933,7 +873,7 @@ def strategie_5_exclusive_number_in_line_or_col():
                                 index_to_clean = line_index + 1
                             
                             xindex_to_clean = index_to_clean + xoffset + squareoffset
-                            s5_clean_col_and_square(tested_value, item1_line, xindex)
+                            s5_clean_col_and_square(tested_value, item1_line, xindex_to_clean)
 
                 # Browse col in other square to clean
                 if found_col_aligned:
@@ -943,9 +883,6 @@ def strategie_5_exclusive_number_in_line_or_col():
                         if tested_value in possible_values_col[item1_col][col_index]:
                             cleaning_required = True
                             possible_values_col[item1_col][col_index].remove(tested_value)
-                            print("\t\t ------------ Found COL ! ------------")
-                            print("\t\t Choice to remove:")
-                            print("\t\t Value", tested_value)
 
                             # From colonne & col_index -> Get square / square index / line / line index
                             squareoffset = 0
