@@ -11,7 +11,7 @@ except ImportError:
     import Image
 import pytesseract
 
-pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract'
+# pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract'
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 
