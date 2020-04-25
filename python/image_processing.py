@@ -98,9 +98,6 @@ def detect_integer(model, images_pytesseract, images_knearest):
         except Exception as e:
             pass
 
-    if len(images_pytesseract) > 1 and len(set(integers_found))==1:
-        return integers_found
-
     for image_knearest in images_knearest:
         # Try to search number with OPENCV KNEAREST
         small_roi = cv2.resize(image_knearest,(10,10))
@@ -143,7 +140,7 @@ def retrieve_number_from_square(image):
 
         if (100<bw*bh<1800) and (5<bw<40) and (20<bh<45):
 
-            integers_found = detect_integer(model, [erode_type1[by-4:by+bh+4,bx-4:bx+bw+4], erode_type1[by-1:by+bh+1,bx-1:bx+bw+1]], [erode_type1[by:by+bh,bx:bx+bw], erode_type2[by:by+bh,bx:bx+bw], thresh[by:by+bh,bx:bx+bw]])
+            integers_found = detect_integer(model, [], [erode_type1[by:by+bh,bx:bx+bw], erode_type2[by:by+bh,bx:bx+bw], thresh[by:by+bh,bx:bx+bw]])
             if len(integers_found) == 0:
                 continue
 
