@@ -1,9 +1,7 @@
 #!/usr/bin/python3
-# python -m pip install pytesseract
-
 import cv2
 import numpy as np
-import time,sys
+import time, sys, base64
 
 import sudoku
 
@@ -13,14 +11,21 @@ except ImportError:
     import Image
 import pytesseract
 
-pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract'
+# pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files (x86)/Tesseract-OCR/tesseract'
 
-samples = np.float32(np.loadtxt('samples.data'))
-responses = np.float32(np.loadtxt('responses.data'))
+current_milli_time = lambda: int(round(time.time() * 1000))
 
-model = cv2.ml.KNearest_create()
-model.train(samples, cv2.ml.ROW_SAMPLE, responses)
 
+def to_base64(img):
+    _, buf = cv2.imencode(".jpg", img)
+    return "data:image/jpeg;base64," + str(base64.b64encode(buf), 'utf-8')
+
+
+def from_base64(buf):
+    decoded_data = base64.b64decode(buf.split(',')[1])
+    np_data = np.frombuffer(decoded_data,np.uint8)
+    
+    return cv2.imdecode(np_data,cv2.IMREAD_UNCHANGED)
 
 def rectify(h):
         h = h.reshape((4,2))
@@ -36,9 +41,7 @@ def rectify(h):
   
         return hnew
 
-def open_original_image(image_path):
-    original_img =  cv2.imread(image_path)
-
+def check_image_size(original_img):
     img = original_img
 
     # Check size
@@ -83,12 +86,43 @@ def search_square_from_image(img):
 
     return cv2.warpPerspective(img, retval, (450,450))
 
+def detect_integer(model, images_pytesseract, images_knearest):
+    integers_found = []
+
+    for image_pytesseract in images_pytesseract:
+        # Use pytesseract
+        result = pytesseract.image_to_string(image_pytesseract, config='--psm 7 -c tessedit_char_whitelist=123456789')
+        try:
+            result = int(result)
+            integers_found.append(result)
+        except Exception as e:
+            pass
+
+    if len(images_pytesseract) > 1 and len(set(integers_found))==1:
+        return integers_found
+
+    for image_knearest in images_knearest:
+        # Try to search number with OPENCV KNEAREST
+        small_roi = cv2.resize(image_knearest,(10,10))
+        feature = small_roi.reshape((1,100)).astype(np.float32)
+        _,results,_,_ = model.findNearest(feature,k=1)
+        
+        try:
+            result = int(results.ravel()[0])
+            integers_found.append(result)
+        except Exception as e:
+            pass
+
+    return integers_found
 
 def retrieve_number_from_square(image):
-    global model
+    samples = np.float32(np.loadtxt('samples.data'))
+    responses = np.float32(np.loadtxt('responses.data'))
+
+    model = cv2.ml.KNearest_create()
+    model.train(samples, cv2.ml.ROW_SAMPLE, responses)
     
     warpg = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
 
     dict_values_readed = dict()
 
@@ -97,9 +131,9 @@ def retrieve_number_from_square(image):
 
     smooth = cv2.GaussianBlur(warpg ,(3,3), 3)
     thresh = cv2.adaptiveThreshold(smooth, 255, 0, 1, 5, 2)
-    kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3,3))
-    erode = cv2.erode(thresh, kernel, iterations = 1)
-    dilate = cv2.dilate(erode, kernel, iterations = 1)
+    
+    erode_type1 = cv2.erode(thresh, cv2.getStructuringElement(cv2.MORPH_CROSS, (2,2)), iterations = 1)
+    erode_type2 = cv2.erode(thresh, cv2.getStructuringElement(cv2.MORPH_CROSS, (3,3)), iterations = 1)
 
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -108,28 +142,13 @@ def retrieve_number_from_square(image):
         (bx,by,bw,bh) = cv2.boundingRect(cnt)
 
         if (100<bw*bh<1800) and (5<bw<40) and (20<bh<45):
-            roi = thresh[by-5:by+bh+5,bx-5:bx+bw+5]
-            # Try to search numbers with tesseract
-            integer_tesseract = pytesseract.image_to_string(roi, config='--psm 7 -c tessedit_char_whitelist=123456789')
-            try:
-                integer_tesseract = int(integer_tesseract)
-            except Exception as e:
-                integer_tesseract = None
-            # Try to search number with OPENCV KNEAREST
-            roi = dilate[by:by+bh,bx:bx+bw]
-            small_roi = cv2.resize(roi,(10,10))
 
-            feature = small_roi.reshape((1,100)).astype(np.float32)
-            ret,results,neigh,dist = model.findNearest(feature,k=1)
-            integer = results.ravel()[0]
-
-            try:
-                integer = int(integer)
-            except Exception as e:
+            integers_found = detect_integer(model, [erode_type1[by-4:by+bh+4,bx-4:bx+bw+4], erode_type1[by-1:by+bh+1,bx-1:bx+bw+1]], [erode_type1[by:by+bh,bx:bx+bw], erode_type2[by:by+bh,bx:bx+bw], thresh[by:by+bh,bx:bx+bw]])
+            if len(integers_found) == 0:
                 continue
-            # Compare results
-            if integer_tesseract is not None and integer_tesseract != integer:
-                integer = integer_tesseract
+
+            integer = max(set(integers_found), key = integers_found.count)
+
             
             gridx = int((bx+bw/2) / 50)
             gridy = int((by+bh/2) / 50)
@@ -162,6 +181,10 @@ def retrieve_number_from_square(image):
             
             case = square_offset + ((posy - offsety - 1) * 3) + (posx - offsetx)
 
+            print("Case: ", case)
+            print("Integer: ", integer)
+            print("integers: ", integers_found)
+
             dict_values_readed[case] = integer
 
     return dict_values_readed
@@ -188,31 +211,46 @@ def print_results(image, dict_values_readed, dict_values_solved):
                 posx = (col-1) * 50 + 14
                 posy = (line-1) * 50 + 35
 
-                cv2.putText(image, str(dict_values_solved[case]), (posx,posy), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 3, cv2.LINE_AA, False)
+                cv2.putText(image, str(dict_values_solved[case]), (posx,posy), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,50,50), 3, cv2.LINE_AA, False)
                 
     return image
 
 
-original_img = open_original_image('C:/Users/Wallouf/Desktop/python/test5.jpg')
-processed_img = original_img
+def launch_image_processing_with_base64(data_uri):
+    processed_img = process_image(from_base64(data_uri))
+    # Re-encode to base64
+    return to_base64(processed_img)
 
-image_square_found = search_square_from_image(original_img)
-
-dict_values_readed = None
-
-if image_square_found is not None:
-    processed_img = image_square_found
-    dict_values_readed = retrieve_number_from_square(image_square_found)
-
-print(dict_values_readed)
-if dict_values_readed is not None:
-    processed_img = print_results(processed_img, dict_values_readed, solve_sudoku(dict_values_readed))
-    # processed_img = print_results(processed_img, dict_values_readed, dict_values_readed)
-else:
-    processed_img = print_results(processed_img, None, None)
+def launch_image_processing_with_path(image_path):
+    return process_image(cv2.imread(image_path))
 
 
-cv2.imshow('img', processed_img)
+def process_image(original_img):
+    begin = current_milli_time()
+    
+    original_img = check_image_size(original_img)
+    processed_img = original_img
 
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    image_square_found = search_square_from_image(original_img)
+
+    dict_values_readed = None
+
+    if image_square_found is not None:
+        processed_img = image_square_found
+        dict_values_readed = retrieve_number_from_square(image_square_found)
+
+    print("Value detected:")
+    for index in range(1,82):
+        if dict_values_readed[index] != 0:
+            print("\tIndex: ", index)
+            print("\tValue: ", dict_values_readed[index])
+            print("")
+
+    if dict_values_readed is not None:
+        processed_img = print_results(processed_img, dict_values_readed, solve_sudoku(dict_values_readed))
+    else:
+        processed_img = print_results(processed_img, None, None)
+    
+    print("Duration : ", (current_milli_time() - begin))
+
+    return processed_img
