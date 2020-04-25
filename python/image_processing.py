@@ -128,9 +128,15 @@ def retrieve_number_from_square(image):
 
     smooth = cv2.GaussianBlur(warpg ,(3,3), 3)
     thresh = cv2.adaptiveThreshold(smooth, 255, 0, 1, 5, 2)
+
+    kernel_type1 = cv2.getStructuringElement(cv2.MORPH_CROSS, (2,2))
+    kernel_type2 = cv2.getStructuringElement(cv2.MORPH_CROSS, (3,3))
     
-    erode_type1 = cv2.erode(thresh, cv2.getStructuringElement(cv2.MORPH_CROSS, (2,2)), iterations = 1)
-    erode_type2 = cv2.erode(thresh, cv2.getStructuringElement(cv2.MORPH_CROSS, (3,3)), iterations = 1)
+    erode_type1 = cv2.erode(thresh, kernel_type1, iterations = 1)
+    erode_type2 = cv2.erode(thresh, kernel_type2, iterations = 1)
+
+    dilate_type1 =cv2.dilate(erode_type1,kernel_type1,iterations =1)
+    dilate_type2 =cv2.dilate(erode_type2,kernel_type2,iterations =1)
 
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -140,7 +146,7 @@ def retrieve_number_from_square(image):
 
         if (100<bw*bh<1800) and (5<bw<40) and (20<bh<45):
 
-            integers_found = detect_integer(model, [], [erode_type1[by:by+bh,bx:bx+bw], erode_type2[by:by+bh,bx:bx+bw], thresh[by:by+bh,bx:bx+bw]])
+            integers_found = detect_integer(model, [], [erode_type1[by:by+bh,bx:bx+bw], erode_type2[by:by+bh,bx:bx+bw], thresh[by:by+bh,bx:bx+bw], dilate_type1[by:by+bh,bx:bx+bw], dilate_type2[by:by+bh,bx:bx+bw]])
             if len(integers_found) == 0:
                 continue
 
