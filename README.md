@@ -20,7 +20,7 @@ So in the end, what you have is:
 ## Design
 
 Overview of the solution:
-![AWS Sudoku Solver - By Wallouf](https://github.com/wallouf/help/GITHUB-WALLOUF-AWS_Sudoku_Solver.jpeg)
+![AWS Sudoku Solver - By Wallouf](https://raw.githubusercontent.com/wallouf/sudokusolver/master/help/GITHUB-WALLOUF-AWS_Sudoku_Solver.jpeg)
 
 
 ## Lib used
